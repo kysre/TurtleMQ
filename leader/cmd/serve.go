@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/kysre/TurtleMQ/leader/internal/models"
 	"github.com/kysre/TurtleMQ/leader/internal/pkg/grpcserver"
 
 	"github.com/kysre/TurtleMQ/leader/internal/app/core"
@@ -37,7 +38,9 @@ func serve(cmd *cobra.Command, args []string) {
 	}
 
 	logger := getLoggerOrPanic(config)
-	server := getServerOrPanic(config, logger)
+	directory := getDataNodeDirectoryOrPanic()
+	queueCore := getQueueCoreOrPanic(logger, directory)
+	server := getQueueServerOrPanic(config, logger, queueCore)
 
 	var serverWaitGroup sync.WaitGroup
 	serverWaitGroup.Add(1)
@@ -68,8 +71,20 @@ func getLoggerOrPanic(conf *Config) *logrus.Logger {
 	return logger
 }
 
-func getServerOrPanic(conf *Config, log *logrus.Logger) *grpcserver.Server {
-	server, err := provideServer(core.New(), conf, log)
+func getDataNodeDirectoryOrPanic() *models.DataNodeDirectory {
+	directory := models.NewDataNodeDirectory()
+	if directory == nil {
+		panic("DataNodeDirectory is nil")
+	}
+	return directory
+}
+
+func getQueueCoreOrPanic(log *logrus.Logger, directory *models.DataNodeDirectory) queue.QueueServer {
+	return core.NewQueueCore(log, directory)
+}
+
+func getQueueServerOrPanic(conf *Config, log *logrus.Logger, queueCore queue.QueueServer) *grpcserver.Server {
+	server, err := provideServer(queueCore, conf, log)
 	if err != nil {
 		panic(err)
 	}

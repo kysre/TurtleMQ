@@ -27,7 +27,7 @@ clean: ## to remove generated files
 	-find . -type d -name mocks -exec rm -rf \{} +
 
 leader: $(SRCS) $(PBS) | generate ## Compile leader daemon
-	go build -o $@ -ldflags="$(LD_FLAGS)" ./cmd/$@
+	go build -o $@ leader ./cmd/$@
 
 docker: ## to build docker image
 	$(DOCKER) build -t $(IMAGE_NAME):$(IMAGE_VERSION) .
