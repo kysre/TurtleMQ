@@ -1,6 +1,7 @@
 from typing import List
 
 import grpc
+import google.protobuf.empty_pb2 as empty_pb2
 
 from client_py import queue_pb2_grpc
 from client_py import queue_pb2
@@ -9,6 +10,8 @@ HOST, PORT = "localhost", "8888"
 
 
 class QueueClient:
+    stub = None
+
     @classmethod
     def get_stub(cls, host: str, port: str):
         if cls.stub is None:
@@ -20,13 +23,27 @@ class QueueClient:
         try:
             stub = self.get_stub(HOST, PORT)
             req = queue_pb2.PushRequest(key=key)
+            print(f"values: {value}")
+            # for item in value:
+            #     print(type(item), item)
+            #     print(type(req.value))
+            #     req.value.extend(item)
             req.value.extend(value)
             stub.Push(req)
-        except Exception:
-            print("kir")
+        except grpc.RpcError as e:
+            print(f"Error in pushing: {e}.")
 
     def pull(self):
-        pass
+        try:
+            stub = self.get_stub(HOST, PORT)
+            # print('here')
+            # response = queue_pb2.PullResponse(empty_pb2)
+            response = stub.Pull(empty_pb2)
+            print(f"got response: {response}")
+            for item in response.value:
+                print(f"KEY: {response.key}, VALUE: {item}")
+        except grpc.RpcError as e:
+            print(f"Error. Couldn't pull: {e}.")
 
     def subscribe(self):
         pass
@@ -34,14 +51,14 @@ class QueueClient:
 
 def run():
     queue_clinet = QueueClient()
-    try:
-        stub = queue_pb2_grpc.QueueStub(queue_clinet.stub)
-
-    with grpc.insecure_channel(f"{HOST}:{PORT}") as channel:
-        stub = queue_pb2_grpc.QueueStub(channel)
-
-    queue_client = QueueClient()
+    # TEST 1
+    key = 'k1'
+    value = [b'hi.', b'goodbye.']
+    queue_clinet.push(key=key, value=value)
+    queue_clinet.pull()
 
 
 if __name__ == "__main__":
+    # print(type(bytearray([4,6])))
+    # print(bytearray([4,6]))
     run()
