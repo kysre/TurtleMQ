@@ -92,7 +92,7 @@ func getQueueServerOrPanic(conf *Config, log *logrus.Logger, queueCore queue.Que
 }
 
 func provideServer(server queue.QueueServer, config *Config, logger *logrus.Logger) (*grpcserver.Server, error) {
-	return grpcserver.New(server, logger, config.GRPC.ListenPort)
+	return grpcserver.New(server, logger, config.Queue.ListenPort)
 }
 
 func makeServerCtx() (context.Context, context.CancelFunc) {

@@ -28,7 +28,7 @@ func healthCheck(cmd *cobra.Command, _ []string) {
 		panic(err)
 	}
 
-	addr := fmt.Sprintf(":%d", config.GRPC.ListenPort)
+	addr := fmt.Sprintf(":%d", config.Queue.ListenPort)
 	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logrus.WithError(err).Error("failed to dial grpc server")

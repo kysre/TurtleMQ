@@ -13,12 +13,18 @@ import (
 type Config struct {
 	ConfigFile string
 	Logging    LoggingConfig
+	Queue      QueueConfig
+	Leader     LeaderConfig
 	Metric     MetricConfig
-	GRPC       GRPCConfig
 }
 
-type GRPCConfig struct {
+type QueueConfig struct {
 	ListenPort int
+}
+
+type LeaderConfig struct {
+	ListenPort  int
+	ReplicaHost string
 }
 
 type MetricConfig struct {
@@ -27,17 +33,20 @@ type MetricConfig struct {
 
 // LoadConfig loads the config from a file if specified, otherwise from the environment
 func LoadConfig(cmd *cobra.Command) (*Config, error) {
-	// Setting defaults for this application
-	viper.SetDefault("logging.level", "error")
-
-	viper.SetDefault("metric.ListenPort", 9000)
-
 	// Read Config from ENV
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.SetEnvPrefix("LEADER")
 	viper.AutomaticEnv()
 
-	viper.SetDefault("grpc.listenPort", 8888)
+	// Setting defaults for this application
+	viper.SetDefault("logging.level", "error")
+
+	viper.SetDefault("queue.listenPort", 8888)
+
+	viper.SetDefault("leader.ListenPort", 8080)
+	viper.SetDefault("leader.ReplicaHost", "localhost")
+
+	viper.SetDefault("metric.ListenPort", 9000)
 
 	// Read Config from Flags
 	err := viper.BindPFlags(cmd.Flags())
