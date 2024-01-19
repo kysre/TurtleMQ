@@ -1,0 +1,9 @@
+/postviewd
+/.bin
+mocks
+.vscode/
+.coverage
+*.cover
+/coverage.html
+.idea
+**/wire_gen.go
