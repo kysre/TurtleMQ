@@ -18,7 +18,12 @@ message PullResponse {
   repeated bytes value = 2;
 }
 
+message AcknowledgePullRequest {
+  string key = 1;
+}
+
 service Queue {
   rpc Push(PushRequest) returns (google.protobuf.Empty);
   rpc Pull(google.protobuf.Empty) returns (PullResponse);
+  rpc AcknowledgePull(AcknowledgePullRequest) returns (google.protobuf.Empty);
 }

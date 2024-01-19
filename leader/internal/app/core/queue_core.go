@@ -22,10 +22,23 @@ func NewQueueCore(logger *logrus.Logger, directory *models.DataNodeDirectory) qu
 	}
 }
 
-func (c *queueCore) Push(ctx context.Context, request *queue.PushRequest) (*emptypb.Empty, error) {
+func (c *queueCore) Push(
+	ctx context.Context, request *queue.PushRequest,
+) (*emptypb.Empty, error) {
+	// TODO: Get Related DN from LB and Push to it
 	return &emptypb.Empty{}, nil
 }
 
-func (c *queueCore) Pull(ctx context.Context, request *emptypb.Empty) (*queue.PullResponse, error) {
+func (c *queueCore) Pull(
+	ctx context.Context, request *emptypb.Empty,
+) (*queue.PullResponse, error) {
+	// TODO: Get DataNode from LB and call Pull
 	return &queue.PullResponse{Key: "test", Value: make([][]byte, 0)}, nil
+}
+
+func (c *queueCore) AcknowledgePull(
+	ctx context.Context, request *queue.AcknowledgePullRequest,
+) (*emptypb.Empty, error) {
+	// TODO: Get related DN from LB and call it's AcknowledgePull
+	return &emptypb.Empty{}, nil
 }
