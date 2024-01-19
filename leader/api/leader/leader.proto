@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+// protoc -I. --go_out=plugins=grpc:$GOPATH/src ./api/leader/leader.proto
+
+package leader;
+
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/kysre/TurtleMQ/leader/pkg/leader";
+
+message AddDataNodeRequest {
+  string address = 1;
+}
+
+service Leader {
+  rpc IsHealthy(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc AddDataNode(AddDataNodeRequest) returns (google.protobuf.Empty);
+}
