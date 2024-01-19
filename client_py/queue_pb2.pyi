@@ -21,3 +21,9 @@ class PullResponse(_message.Message):
     key: str
     value: _containers.RepeatedScalarFieldContainer[bytes]
     def __init__(self, key: _Optional[str] = ..., value: _Optional[_Iterable[bytes]] = ...) -> None: ...
+
+class AcknowledgePullRequest(_message.Message):
+    __slots__ = ("key",)
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    key: str
+    def __init__(self, key: _Optional[str] = ...) -> None: ...

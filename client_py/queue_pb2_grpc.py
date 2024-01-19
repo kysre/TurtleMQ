@@ -25,6 +25,11 @@ class QueueStub(object):
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
                 response_deserializer=client__py_dot_queue__pb2.PullResponse.FromString,
                 )
+        self.AcknowledgePull = channel.unary_unary(
+                '/client.Queue/AcknowledgePull',
+                request_serializer=client__py_dot_queue__pb2.AcknowledgePullRequest.SerializeToString,
+                response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                )
 
 
 class QueueServicer(object):
@@ -42,6 +47,12 @@ class QueueServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def AcknowledgePull(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_QueueServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -54,6 +65,11 @@ def add_QueueServicer_to_server(servicer, server):
                     servicer.Pull,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                     response_serializer=client__py_dot_queue__pb2.PullResponse.SerializeToString,
+            ),
+            'AcknowledgePull': grpc.unary_unary_rpc_method_handler(
+                    servicer.AcknowledgePull,
+                    request_deserializer=client__py_dot_queue__pb2.AcknowledgePullRequest.FromString,
+                    response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -96,5 +112,22 @@ class Queue(object):
         return grpc.experimental.unary_unary(request, target, '/client.Queue/Pull',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             client__py_dot_queue__pb2.PullResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def AcknowledgePull(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/client.Queue/AcknowledgePull',
+            client__py_dot_queue__pb2.AcknowledgePullRequest.SerializeToString,
+            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

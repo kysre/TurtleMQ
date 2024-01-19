@@ -24,12 +24,7 @@ class QueueClient:
 
     def push(self, key: str, value: List[bytes]):
         try:
-            # logging.basicConfig(level=logging.INFO)
             stub = self.get_stub(HOST, PORT)
-            # req = queue_pb2.PushRequest(key=key)
-            # req.value.extend(value)
-
-            # push_message = queue_pb2.PushRequest(key=key, value=value)
 
             stub.Push(queue_pb2.PushRequest(key=key, value=value))
 
@@ -39,17 +34,18 @@ class QueueClient:
     def pull(self):
         try:
             stub = self.get_stub(HOST, PORT)
-            # print('here')
-            print('reaches here')
-            response = stub.Pull(_empty_pb2)
-            print(f"got response: {response}")
-            for item in response.value:
-                print(f"KEY: {response.key}, VALUE: {item}")
+            response = stub.Pull(f())
+            print(f"key and message: {response.key} - {response.value}")
+            # stub.AcknowledgePull()
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
 
     def subscribe(self):
         pass
+
+
+def f():
+    return _empty_pb2.Empty()
 
 
 def run():
@@ -59,7 +55,6 @@ def run():
     # TEST 1
     key = 'k1'
     value = [b'hi.', b'goodbye.']
-    # print(f"TRY TO PUSH MESSAGE: {key} : {value}")
     queue_clinet.push(key=key, value=value)
 
     # TEST 2
@@ -68,7 +63,6 @@ def run():
     queue_clinet.push(key=key, value=value)
 
     queue_clinet.pull()
-    # print('After pull')
 
 
 if __name__ == "__main__":
