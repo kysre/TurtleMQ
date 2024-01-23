@@ -16,53 +16,53 @@ const (
 )
 
 type DataNode struct {
-	id                int
-	address           string
-	state             DataNodeState
-	remainingMsgCount int
-	client            clients.DataNodeClient
+	ID                int
+	Address           string
+	State             DataNodeState
+	RemainingMsgCount int
+	Client            clients.DataNodeClient
 }
 
 type DataNodeDirectory struct {
-	dataNodes []*DataNode
-	mx        *sync.Mutex
+	DataNodes []*DataNode
+	MX        *sync.Mutex
 }
 
 func NewDataNodeDirectory() *DataNodeDirectory {
 	return &DataNodeDirectory{
-		dataNodes: make([]*DataNode, 0),
-		mx:        &sync.Mutex{},
+		DataNodes: make([]*DataNode, 0),
+		MX:        &sync.Mutex{},
 	}
 }
 
 func (d *DataNodeDirectory) AddDataNode(dataNode *DataNode) error {
-	d.mx.Lock()
-	d.dataNodes = append(d.dataNodes, dataNode)
-	d.mx.Unlock()
+	d.MX.Lock()
+	d.DataNodes = append(d.DataNodes, dataNode)
+	d.MX.Unlock()
 	return nil
 }
 
 func (d *DataNodeDirectory) GetDataNode(index int) (*DataNode, error) {
-	d.mx.Lock()
-	dataNode := d.dataNodes[index]
-	healthy := dataNode.client.IsHealthy()
+	d.MX.Lock()
+	dataNode := d.DataNodes[index]
+	healthy := dataNode.Client.IsHealthy()
 	if !healthy {
-		dataNode.state = DataNodeStateUNHEALTHY
+		dataNode.State = DataNodeStateUNHEALTHY
 	}
-	d.mx.Unlock()
+	d.MX.Unlock()
 
-	if dataNode.state == DataNodeStatePENDING {
+	if dataNode.State == DataNodeStatePENDING {
 		return nil, errors.New("PENDING")
 	}
-	if dataNode.state == DataNodeStateUNHEALTHY {
+	if dataNode.State == DataNodeStateUNHEALTHY {
 		return nil, errors.New("PENDING")
 	}
 	return dataNode, nil
 }
 
 func (d *DataNodeDirectory) UpdateDataNodeState(index int, state DataNodeState) {
-	d.mx.Lock()
-	dataNode := d.dataNodes[index]
-	dataNode.state = state
-	d.mx.Unlock()
+	d.MX.Lock()
+	dataNode := d.DataNodes[index]
+	dataNode.State = state
+	d.MX.Unlock()
 }
