@@ -2,20 +2,21 @@ package loadbalancer
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"io"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/kysre/TurtleMQ/leader/clients"
+	"github.com/kysre/TurtleMQ/leader/internal/clients"
 	"github.com/kysre/TurtleMQ/leader/internal/models"
 )
 
-type LoadBalancer interface {
+type Balancer interface {
 	AddDataNodeToHashCircle(datanode *models.DataNode) error
-	GetPushDataNodeClient(token string) (*clients.DataNodeClient, error)
-	GetPullDataNodeClient() (*clients.DataNodeClient, error)
+	GetPushDataNodeClient(ctx context.Context, token string) (*clients.DataNodeClient, error)
+	GetPullDataNodeClient(ctx context.Context) (*clients.DataNodeClient, error)
 }
 
 type balancer struct {
@@ -26,7 +27,7 @@ type balancer struct {
 	dataNodeHashMap         map[string]int
 }
 
-func NewLoadBalancer(logger *logrus.Logger, directory *models.DataNodeDirectory) LoadBalancer {
+func NewBalancer(logger *logrus.Logger, directory *models.DataNodeDirectory) Balancer {
 	return &balancer{
 		logger:    logger,
 		directory: directory,
@@ -36,7 +37,7 @@ func NewLoadBalancer(logger *logrus.Logger, directory *models.DataNodeDirectory)
 	}
 }
 
-func (b *balancer) GetPushDataNodeClient(token string) (*clients.DataNodeClient, error) {
+func (b *balancer) GetPushDataNodeClient(ctx context.Context, token string) (*clients.DataNodeClient, error) {
 	hash, err := b.getHash(token)
 	if err != nil {
 		return nil, err
@@ -46,19 +47,19 @@ func (b *balancer) GetPushDataNodeClient(token string) (*clients.DataNodeClient,
 		return nil, err
 	}
 	dnHash := b.datanodeHashSortedSlice[index]
-	dn, err := b.directory.GetDataNode(b.dataNodeHashMap[dnHash])
+	dn, err := b.directory.GetDataNode(ctx, b.dataNodeHashMap[dnHash])
 	if err != nil {
 		return nil, err
 	}
 	return &dn.Client, nil
 }
 
-func (b *balancer) GetPullDataNodeClient() (*clients.DataNodeClient, error) {
+func (b *balancer) GetPullDataNodeClient(ctx context.Context) (*clients.DataNodeClient, error) {
 	maxRemainingMsgHash := ""
 	maxRemainingMsgCount := 0
 	for i := 0; i < 2*len(b.datanodeHashSortedSlice); i++ {
 		dnHash := b.datanodeHashSortedSlice[i%len(b.datanodeHashSortedSlice)]
-		dn, _ := b.directory.GetDataNode(b.dataNodeHashMap[dnHash])
+		dn, _ := b.directory.GetDataNode(ctx, b.dataNodeHashMap[dnHash])
 		if dn == nil {
 			continue
 		}
@@ -67,7 +68,7 @@ func (b *balancer) GetPullDataNodeClient() (*clients.DataNodeClient, error) {
 			maxRemainingMsgCount = dn.RemainingMsgCount
 		}
 	}
-	dn, err := b.directory.GetDataNode(b.dataNodeHashMap[maxRemainingMsgHash])
+	dn, err := b.directory.GetDataNode(ctx, b.dataNodeHashMap[maxRemainingMsgHash])
 	if err != nil {
 		return nil, err
 	}

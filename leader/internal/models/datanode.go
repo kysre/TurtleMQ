@@ -1,9 +1,10 @@
 package models
 
 import (
+	"context"
 	"sync"
 
-	"github.com/kysre/TurtleMQ/leader/clients"
+	"github.com/kysre/TurtleMQ/leader/internal/clients"
 	"github.com/kysre/TurtleMQ/leader/pkg/errors"
 )
 
@@ -43,12 +44,12 @@ func (d *DataNodeDirectory) AddDataNode(dataNode *DataNode) error {
 	return nil
 }
 
-func (d *DataNodeDirectory) GetDataNode(index int) (*DataNode, error) {
+func (d *DataNodeDirectory) GetDataNode(ctx context.Context, index int) (*DataNode, error) {
 	dataNode := d.DataNodes[index]
 	if dataNode.State != DataNodeStateAVAILABLE {
 		return nil, errors.New("PENDING")
 	}
-	healthy := dataNode.Client.IsHealthy()
+	healthy := dataNode.Client.IsHealthy(ctx)
 	if !healthy {
 		d.MX.Lock()
 		dataNode.State = DataNodeStateUNHEALTHY
@@ -68,4 +69,10 @@ func (d *DataNodeDirectory) UpdateDataNodeState(index int, state DataNodeState) 
 	dataNode := d.DataNodes[index]
 	dataNode.State = state
 	d.MX.Unlock()
+}
+
+func (d *DataNodeDirectory) GetDataNodeCount() int {
+	d.MX.Lock()
+	defer d.MX.Unlock()
+	return len(d.DataNodes)
 }
