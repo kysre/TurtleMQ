@@ -29,10 +29,11 @@ type DataNodeDirectory struct {
 }
 
 func NewDataNodeDirectory() *DataNodeDirectory {
-	return &DataNodeDirectory{
+	directory := DataNodeDirectory{
 		DataNodes: make([]*DataNode, 0),
 		MX:        &sync.Mutex{},
 	}
+	return &directory
 }
 
 func (d *DataNodeDirectory) AddDataNode(dataNode *DataNode) error {
@@ -43,14 +44,16 @@ func (d *DataNodeDirectory) AddDataNode(dataNode *DataNode) error {
 }
 
 func (d *DataNodeDirectory) GetDataNode(index int) (*DataNode, error) {
-	d.MX.Lock()
 	dataNode := d.DataNodes[index]
+	if dataNode.State != DataNodeStateAVAILABLE {
+		return nil, errors.New("PENDING")
+	}
 	healthy := dataNode.Client.IsHealthy()
 	if !healthy {
+		d.MX.Lock()
 		dataNode.State = DataNodeStateUNHEALTHY
+		d.MX.Unlock()
 	}
-	d.MX.Unlock()
-
 	if dataNode.State == DataNodeStatePENDING {
 		return nil, errors.New("PENDING")
 	}

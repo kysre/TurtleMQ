@@ -11,10 +11,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/kysre/TurtleMQ/leader/cmd/tasks"
+	"github.com/kysre/TurtleMQ/leader/internal/app/core"
 	"github.com/kysre/TurtleMQ/leader/internal/models"
 	"github.com/kysre/TurtleMQ/leader/internal/pkg/grpcserver"
-
-	"github.com/kysre/TurtleMQ/leader/internal/app/core"
 	"github.com/kysre/TurtleMQ/leader/pkg/queue"
 )
 
@@ -38,7 +38,7 @@ func serve(cmd *cobra.Command, args []string) {
 	}
 
 	logger := getLoggerOrPanic(config)
-	directory := getDataNodeDirectoryOrPanic()
+	directory := getDataNodeDirectoryOrPanic(config)
 	queueCore := getQueueCoreOrPanic(logger, directory)
 	server := getQueueServerOrPanic(config, logger, queueCore)
 
@@ -71,11 +71,12 @@ func getLoggerOrPanic(conf *Config) *logrus.Logger {
 	return logger
 }
 
-func getDataNodeDirectoryOrPanic() *models.DataNodeDirectory {
+func getDataNodeDirectoryOrPanic(conf *Config) *models.DataNodeDirectory {
 	directory := models.NewDataNodeDirectory()
 	if directory == nil {
 		panic("DataNodeDirectory is nil")
 	}
+	tasks.RunHealthChecks(directory, conf.Leader.DataNodeStateCheckPeriod)
 	return directory
 }
 
