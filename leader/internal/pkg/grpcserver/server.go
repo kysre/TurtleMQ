@@ -10,6 +10,7 @@ import (
 	grpcprometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 
 	"github.com/kysre/TurtleMQ/leader/pkg/errors"
+	"github.com/kysre/TurtleMQ/leader/pkg/leader"
 	"github.com/kysre/TurtleMQ/leader/pkg/queue"
 
 	"github.com/sirupsen/logrus"
@@ -21,7 +22,7 @@ type Server struct {
 	server   *grpc.Server
 }
 
-func New(queueServer queue.QueueServer, logger *logrus.Logger, listenPort int) (*Server, error) {
+func New(logger *logrus.Logger, listenPort int) (*Server, error) {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", listenPort))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to listen")
@@ -39,12 +40,19 @@ func New(queueServer queue.QueueServer, logger *logrus.Logger, listenPort int) (
 	}
 
 	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(grpcmiddleware.ChainUnaryServer(interceptors...)))
-	queue.RegisterQueueServer(grpcServer, queueServer)
 
 	return &Server{
 		listener: listener,
 		server:   grpcServer,
 	}, nil
+}
+
+func (s *Server) RegisterQueueServer(queueServicer queue.QueueServer) {
+	queue.RegisterQueueServer(s.server, queueServicer)
+}
+
+func (s *Server) RegisterLeaderServer(leaderServicer leader.LeaderServer) {
+	leader.RegisterLeaderServer(s.server, leaderServicer)
 }
 
 func (s *Server) Serve() error {

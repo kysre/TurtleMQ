@@ -11,10 +11,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/kysre/TurtleMQ/leader/cmd/tasks"
+	"github.com/kysre/TurtleMQ/leader/internal/app/core"
+	"github.com/kysre/TurtleMQ/leader/internal/app/loadbalancer"
 	"github.com/kysre/TurtleMQ/leader/internal/models"
 	"github.com/kysre/TurtleMQ/leader/internal/pkg/grpcserver"
-
-	"github.com/kysre/TurtleMQ/leader/internal/app/core"
+	"github.com/kysre/TurtleMQ/leader/pkg/leader"
 	"github.com/kysre/TurtleMQ/leader/pkg/queue"
 )
 
@@ -38,16 +40,20 @@ func serve(cmd *cobra.Command, args []string) {
 	}
 
 	logger := getLoggerOrPanic(config)
-	directory := getDataNodeDirectoryOrPanic()
-	queueCore := getQueueCoreOrPanic(logger, directory)
-	server := getQueueServerOrPanic(config, logger, queueCore)
+	directory := getDataNodeDirectoryOrPanic(config)
+	balancer := getLoadBalancerOrPanic(logger, directory)
+
+	queueCore := getQueueCore(logger, directory, balancer)
+	leaderCore := getLeaderCore(logger, directory, balancer)
+
+	queueServer := getServerOrPanic(config, logger, queueCore, leaderCore)
 
 	var serverWaitGroup sync.WaitGroup
 	serverWaitGroup.Add(1)
 	go func() {
 		defer serverWaitGroup.Done()
 
-		if err := server.Serve(); err != nil {
+		if err := queueServer.Serve(); err != nil {
 			panicWithError(err, "failed to serve")
 		}
 	}()
@@ -58,7 +64,7 @@ func serve(cmd *cobra.Command, args []string) {
 
 	<-serverCtx.Done()
 
-	server.Stop()
+	queueServer.Stop()
 
 	serverWaitGroup.Wait()
 }
@@ -71,28 +77,51 @@ func getLoggerOrPanic(conf *Config) *logrus.Logger {
 	return logger
 }
 
-func getDataNodeDirectoryOrPanic() *models.DataNodeDirectory {
+func getDataNodeDirectoryOrPanic(conf *Config) *models.DataNodeDirectory {
 	directory := models.NewDataNodeDirectory()
 	if directory == nil {
 		panic("DataNodeDirectory is nil")
 	}
+	tasks.RunHealthChecks(directory, conf.Leader.DataNodeStateCheckPeriod)
 	return directory
 }
 
-func getQueueCoreOrPanic(log *logrus.Logger, directory *models.DataNodeDirectory) queue.QueueServer {
-	return core.NewQueueCore(log, directory)
+func getLoadBalancerOrPanic(log *logrus.Logger, directory *models.DataNodeDirectory) loadbalancer.Balancer {
+	return loadbalancer.NewBalancer(log, directory)
 }
 
-func getQueueServerOrPanic(conf *Config, log *logrus.Logger, queueCore queue.QueueServer) *grpcserver.Server {
-	server, err := provideServer(queueCore, conf, log)
+func getQueueCore(
+	log *logrus.Logger, directory *models.DataNodeDirectory, balancer loadbalancer.Balancer,
+) queue.QueueServer {
+	return core.NewQueueCore(log, directory, balancer)
+}
+
+func getLeaderCore(
+	log *logrus.Logger, directory *models.DataNodeDirectory, balancer loadbalancer.Balancer,
+) leader.LeaderServer {
+	return core.NewLeaderCore(log, directory, balancer)
+}
+
+func getServerOrPanic(
+	conf *Config, log *logrus.Logger, queueCore queue.QueueServer, leaderCore leader.LeaderServer,
+) *grpcserver.Server {
+	server, err := provideServer(conf, log, queueCore, leaderCore)
 	if err != nil {
 		panic(err)
 	}
 	return server
 }
 
-func provideServer(server queue.QueueServer, config *Config, logger *logrus.Logger) (*grpcserver.Server, error) {
-	return grpcserver.New(server, logger, config.Queue.ListenPort)
+func provideServer(
+	config *Config, logger *logrus.Logger, queueServicer queue.QueueServer, leaderServicer leader.LeaderServer,
+) (*grpcserver.Server, error) {
+	baseServer, err := grpcserver.New(logger, config.Queue.ListenPort)
+	if err != nil {
+		return nil, err
+	}
+	baseServer.RegisterQueueServer(queueServicer)
+	baseServer.RegisterLeaderServer(leaderServicer)
+	return baseServer, nil
 }
 
 func makeServerCtx() (context.Context, context.CancelFunc) {

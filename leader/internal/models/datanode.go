@@ -1,9 +1,10 @@
 package models
 
 import (
+	"context"
 	"sync"
 
-	"github.com/kysre/TurtleMQ/leader/clients"
+	"github.com/kysre/TurtleMQ/leader/internal/clients"
 	"github.com/kysre/TurtleMQ/leader/pkg/errors"
 )
 
@@ -16,53 +17,62 @@ const (
 )
 
 type DataNode struct {
-	id                int
-	address           string
-	state             DataNodeState
-	remainingMsgCount int
-	client            clients.DataNodeClient
+	ID                int
+	Address           string
+	State             DataNodeState
+	RemainingMsgCount int
+	Client            clients.DataNodeClient
 }
 
 type DataNodeDirectory struct {
-	dataNodes []*DataNode
-	mx        *sync.Mutex
+	DataNodes []*DataNode
+	MX        *sync.Mutex
 }
 
 func NewDataNodeDirectory() *DataNodeDirectory {
-	return &DataNodeDirectory{
-		dataNodes: make([]*DataNode, 0),
-		mx:        &sync.Mutex{},
+	directory := DataNodeDirectory{
+		DataNodes: make([]*DataNode, 0),
+		MX:        &sync.Mutex{},
 	}
+	return &directory
 }
 
 func (d *DataNodeDirectory) AddDataNode(dataNode *DataNode) error {
-	d.mx.Lock()
-	d.dataNodes = append(d.dataNodes, dataNode)
-	d.mx.Unlock()
+	d.MX.Lock()
+	d.DataNodes = append(d.DataNodes, dataNode)
+	d.MX.Unlock()
 	return nil
 }
 
-func (d *DataNodeDirectory) GetDataNode(index int) (*DataNode, error) {
-	d.mx.Lock()
-	dataNode := d.dataNodes[index]
-	healthy := dataNode.client.IsHealthy()
-	if !healthy {
-		dataNode.state = DataNodeStateUNHEALTHY
-	}
-	d.mx.Unlock()
-
-	if dataNode.state == DataNodeStatePENDING {
+func (d *DataNodeDirectory) GetDataNode(ctx context.Context, index int) (*DataNode, error) {
+	dataNode := d.DataNodes[index]
+	if dataNode.State != DataNodeStateAVAILABLE {
 		return nil, errors.New("PENDING")
 	}
-	if dataNode.state == DataNodeStateUNHEALTHY {
+	healthy := dataNode.Client.IsHealthy(ctx)
+	if !healthy {
+		d.MX.Lock()
+		dataNode.State = DataNodeStateUNHEALTHY
+		d.MX.Unlock()
+	}
+	if dataNode.State == DataNodeStatePENDING {
+		return nil, errors.New("PENDING")
+	}
+	if dataNode.State == DataNodeStateUNHEALTHY {
 		return nil, errors.New("PENDING")
 	}
 	return dataNode, nil
 }
 
 func (d *DataNodeDirectory) UpdateDataNodeState(index int, state DataNodeState) {
-	d.mx.Lock()
-	dataNode := d.dataNodes[index]
-	dataNode.state = state
-	d.mx.Unlock()
+	d.MX.Lock()
+	dataNode := d.DataNodes[index]
+	dataNode.State = state
+	d.MX.Unlock()
+}
+
+func (d *DataNodeDirectory) GetDataNodeCount() int {
+	d.MX.Lock()
+	defer d.MX.Unlock()
+	return len(d.DataNodes)
 }
