@@ -14,6 +14,7 @@ HOST, PORT = "localhost", "8888"
 
 class QueueClient:
     stub = None
+    HOST, PORT = "localhost", "8888"
 
     @classmethod
     def get_stub(cls, host: str, port: str):
@@ -36,7 +37,8 @@ class QueueClient:
             stub = self.get_stub(HOST, PORT)
             response = stub.Pull(f())
             print(f"key and message: {response.key} - {response.value}")
-            # stub.AcknowledgePull()
+            ack_message = 'acknowledged!'
+            stub.AcknowledgePull(ack_message)
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
 
