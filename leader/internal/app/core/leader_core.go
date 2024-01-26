@@ -20,10 +20,13 @@ type leaderCore struct {
 	balancer loadbalancer.Balancer
 }
 
-func NewLeaderCore(logger *logrus.Logger, directory *models.DataNodeDirectory) leader.LeaderServer {
+func NewLeaderCore(
+	logger *logrus.Logger, directory *models.DataNodeDirectory, balancer loadbalancer.Balancer,
+) leader.LeaderServer {
 	return &leaderCore{
 		logger:    logger,
 		directory: directory,
+		balancer:  balancer,
 	}
 }
 
