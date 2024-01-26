@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"io"
 
 	"github.com/sirupsen/logrus"
@@ -83,6 +84,8 @@ func (b *balancer) AddDataNodeToHashCircle(datanode *models.DataNode) error {
 	insertionIndex, err := b.getLessOrEqualIndexInHashCircle(datanodeHash)
 	b.dataNodeHashMap[datanodeHash] = datanode.ID
 	b.datanodeHashSortedSlice = b.insertInSlice(b.datanodeHashSortedSlice, insertionIndex, datanodeHash)
+	b.logger.Info(fmt.Sprintf("New Hash Circle SortedSlice: %v", b.datanodeHashSortedSlice))
+	b.logger.Info(fmt.Sprintf("New Hash Circle HashMap: %v", b.dataNodeHashMap))
 	return nil
 }
 

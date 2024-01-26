@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -32,6 +33,7 @@ func (c *queueCore) Push(
 ) (*emptypb.Empty, error) {
 	key := request.GetKey()
 	client, err := c.balancer.GetPushDataNodeClient(ctx, key)
+	c.logger.Info(fmt.Sprintf("Push key: %s to DataNode %v", key, client))
 	if err != nil {
 		return nil, err
 	}

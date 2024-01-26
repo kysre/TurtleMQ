@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
@@ -55,5 +56,6 @@ func (lc *leaderCore) AddDataNode(ctx context.Context, request *leader.AddDataNo
 	if err != nil {
 		return nil, err
 	}
+	lc.logger.Info(fmt.Sprintf("Added DataNode %v", dataNode))
 	return &emptypb.Empty{}, nil
 }
