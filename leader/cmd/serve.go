@@ -13,6 +13,7 @@ import (
 
 	"github.com/kysre/TurtleMQ/leader/cmd/tasks"
 	"github.com/kysre/TurtleMQ/leader/internal/app/core"
+	"github.com/kysre/TurtleMQ/leader/internal/app/loadbalancer"
 	"github.com/kysre/TurtleMQ/leader/internal/models"
 	"github.com/kysre/TurtleMQ/leader/internal/pkg/grpcserver"
 	"github.com/kysre/TurtleMQ/leader/pkg/queue"
@@ -39,7 +40,9 @@ func serve(cmd *cobra.Command, args []string) {
 
 	logger := getLoggerOrPanic(config)
 	directory := getDataNodeDirectoryOrPanic(config)
-	queueCore := getQueueCoreOrPanic(logger, directory)
+	balancer := getLoadBalancerOrPanic(logger, directory)
+
+	queueCore := getQueueCoreOrPanic(logger, directory, balancer)
 	server := getQueueServerOrPanic(config, logger, queueCore)
 
 	var serverWaitGroup sync.WaitGroup
@@ -80,8 +83,14 @@ func getDataNodeDirectoryOrPanic(conf *Config) *models.DataNodeDirectory {
 	return directory
 }
 
-func getQueueCoreOrPanic(log *logrus.Logger, directory *models.DataNodeDirectory) queue.QueueServer {
-	return core.NewQueueCore(log, directory)
+func getLoadBalancerOrPanic(log *logrus.Logger, directory *models.DataNodeDirectory) loadbalancer.Balancer {
+	return loadbalancer.NewBalancer(log, directory)
+}
+
+func getQueueCoreOrPanic(
+	log *logrus.Logger, directory *models.DataNodeDirectory, balancer loadbalancer.Balancer,
+) queue.QueueServer {
+	return core.NewQueueCore(log, directory, balancer)
 }
 
 func getQueueServerOrPanic(conf *Config, log *logrus.Logger, queueCore queue.QueueServer) *grpcserver.Server {

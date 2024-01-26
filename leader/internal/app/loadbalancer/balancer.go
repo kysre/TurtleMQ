@@ -15,8 +15,8 @@ import (
 
 type Balancer interface {
 	AddDataNodeToHashCircle(datanode *models.DataNode) error
-	GetPushDataNodeClient(ctx context.Context, token string) (*clients.DataNodeClient, error)
-	GetPullDataNodeClient(ctx context.Context) (*clients.DataNodeClient, error)
+	GetPushDataNodeClient(ctx context.Context, token string) (clients.DataNodeClient, error)
+	GetPullDataNodeClient(ctx context.Context) (clients.DataNodeClient, error)
 }
 
 type balancer struct {
@@ -37,7 +37,7 @@ func NewBalancer(logger *logrus.Logger, directory *models.DataNodeDirectory) Bal
 	}
 }
 
-func (b *balancer) GetPushDataNodeClient(ctx context.Context, token string) (*clients.DataNodeClient, error) {
+func (b *balancer) GetPushDataNodeClient(ctx context.Context, token string) (clients.DataNodeClient, error) {
 	hash, err := b.getHash(token)
 	if err != nil {
 		return nil, err
@@ -51,10 +51,10 @@ func (b *balancer) GetPushDataNodeClient(ctx context.Context, token string) (*cl
 	if err != nil {
 		return nil, err
 	}
-	return &dn.Client, nil
+	return dn.Client, nil
 }
 
-func (b *balancer) GetPullDataNodeClient(ctx context.Context) (*clients.DataNodeClient, error) {
+func (b *balancer) GetPullDataNodeClient(ctx context.Context) (clients.DataNodeClient, error) {
 	maxRemainingMsgHash := ""
 	maxRemainingMsgCount := 0
 	for i := 0; i < 2*len(b.datanodeHashSortedSlice); i++ {
@@ -72,7 +72,7 @@ func (b *balancer) GetPullDataNodeClient(ctx context.Context) (*clients.DataNode
 	if err != nil {
 		return nil, err
 	}
-	return &dn.Client, nil
+	return dn.Client, nil
 }
 
 func (b *balancer) AddDataNodeToHashCircle(datanode *models.DataNode) error {
