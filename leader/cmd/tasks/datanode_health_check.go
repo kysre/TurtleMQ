@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -25,11 +26,13 @@ func checkNodes(dataNodeDirectory *models.DataNodeDirectory) {
 	dataNodes := dataNodeDirectory.DataNodes
 	for i, node := range dataNodes {
 		if node.State == models.DataNodeStateUNHEALTHY {
-			isHealthy := node.Client.IsHealthy()
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+			isHealthy := node.Client.IsHealthy(ctx)
 			if isHealthy {
 				dataNodeDirectory.UpdateDataNodeState(i, models.DataNodeStateAVAILABLE)
 				logrus.Info(fmt.Sprintf("DataNode [%d] became healthy!", i))
 			}
+			cancel()
 		}
 	}
 }
