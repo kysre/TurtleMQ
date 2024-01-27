@@ -20,14 +20,15 @@ class QueueServicer(queue_pb2_grpc.QueueServicer):
         key = request.key
         values = request.value
         self.queue_data.append((key, values))
-        # print(f"push. queue: {self.queue_data}")
+        print(f"pushed. queue: {self.queue_data}")
         return f()
 
     def Pull(self, request, context):
         try:
             key, values = self.queue_data.pop(0)
+            print(f"server before pull: {self.queue_data}")
             response = queue_pb2.PullResponse(key=key, value=values)
-            # print(f"pull. queue: {self.queue_data}")
+            print(f"pulled. queue: {self.queue_data}")
             return response
         except:
             print("Queue is empty.")
@@ -67,6 +68,11 @@ def serve():
     queue_client.push(queue_client, key=key, value=value)
 
     queue_client.pull(queue_client)
+    # print(server.)
+
+    # TEST SUBSCRIBE
+    # queue_client.push(queue_client, key="key1", value=[b"message1"])
+    # queue_client.push(queue_client, key="key2", value=[b"message2"])
 
     server.wait_for_termination()
 
