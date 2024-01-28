@@ -6,7 +6,6 @@ import grpc
 # import google.protobuf.empty_pb2 as empty_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
 
-
 from client_py import queue_pb2_grpc
 from client_py import queue_pb2
 
@@ -24,7 +23,7 @@ class QueueClient:
             cls.stub = queue_pb2_grpc.QueueStub(channel)
         return cls.stub
 
-    def push(self, key: str, value: List[bytes]):
+    async def push(self, key: str, value: List[bytes]):
         try:
             stub = self.get_stub(HOST, PORT)
 
@@ -33,20 +32,30 @@ class QueueClient:
         except grpc.RpcError as e:
             print(f"Error in pushing: {e}.")
 
-    def pull(self):
+    async def pull(self):
         try:
             stub = self.get_stub(HOST, PORT)
             response = stub.Pull(f())
             print(f"key and message: {response.key} - {response.value}")
-            ack_message = 'acknowledged!'
-            stub.AcknowledgePull(ack_message)
+            await self.ack(response.key)
+            return response
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
+
+    async def ack(self, acknowledgement: str):
+        try:
+            stub = self.get_stub(HOST, PORT)
+            ack_request = queue_pb2.AcknowledgePullRequest(key=acknowledgement)
+            stub.AcknowledgePull(ack_request)
+            return True
+        except grpc.RpcError as e:
+            print(f"Error in acknowledgement: {e}")
+            return False
 
     async def subscribe(self):
         try:
             while True:
-                self.pull(self)
+                await self.pull()
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
         pass
