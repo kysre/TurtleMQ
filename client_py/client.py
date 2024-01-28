@@ -37,12 +37,9 @@ class QueueClient:
         try:
             stub = self.get_stub(HOST, PORT)
             response = stub.Pull(f())
-            if response:
-                print(f"key and message: {response.key} - {response.value}")
-                ack_message = 'acknowledged!'
-                stub.AcknowledgePull(ack_message)
-            else:
-                pass
+            print(f"key and message: {response.key} - {response.value}")
+            ack_message = 'acknowledged!'
+            stub.AcknowledgePull(ack_message)
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
 
@@ -50,7 +47,6 @@ class QueueClient:
         try:
             while True:
                 self.pull(self)
-                print("did a pull")
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
         pass
@@ -58,32 +54,3 @@ class QueueClient:
 
 def f():
     return _empty_pb2.Empty()
-
-
-# def run():
-#     # logging.basicConfig(level=logging.INFO)
-#     queue_clinet = QueueClient()
-#
-#     # TEST 1
-#     key = 'k1'
-#     value = [b'hi.', b'goodbye.']
-#     queue_clinet.push(key=key, value=value)
-#
-#     # TEST 2
-#     key = 'k2'
-#     value = [b'second', b'1234']
-#     queue_clinet.push(key=key, value=value)
-#
-#     queue_clinet.pull()
-#     await asyncio.sleep(10)
-
-
-async def main():
-    client = QueueClient
-    client.push(client, key="key1", value=[b"message1"])
-    client.push(client, key="key2", value=[b"message2"])
-    await client.subscribe(client)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-    # run()
