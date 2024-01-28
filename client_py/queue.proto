@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+// protoc -I. --go_out=plugins=grpc:$GOPATH/src ./api/queue/queue.proto
+// python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. ./client_py/queue.proto
+
+package client;
+
+import "google/protobuf/empty.proto";
+
+message PushRequest {
+  string key = 1;
+  repeated bytes value = 2;
+}
+
+message PullResponse {
+  string key = 1;
+  repeated bytes value = 2;
+}
+
+message AcknowledgePullRequest{
+  string key = 1;
+}
+
+service Queue {
+  rpc Push(PushRequest) returns (google.protobuf.Empty);
+  rpc Pull(google.protobuf.Empty) returns (PullResponse);
+  rpc AcknowledgePull(AcknowledgePullRequest) returns (google.protobuf.Empty);
+}
