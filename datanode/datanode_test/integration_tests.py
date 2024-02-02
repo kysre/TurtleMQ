@@ -1,6 +1,6 @@
 import time
 from unittest import TestCase
-from client import QueueClient
+from datanode_client import QueueClient
 from concurrent import futures
 import asyncio
 
