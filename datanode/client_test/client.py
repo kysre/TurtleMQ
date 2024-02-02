@@ -39,6 +39,7 @@ class QueueClient:
             return message
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
+            return 'error'
 
     async def pull_without_ack(self):
         try:
@@ -49,7 +50,6 @@ class QueueClient:
             return message
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
-
 
     async def ack(self, acknowledgement: str):
         try:
