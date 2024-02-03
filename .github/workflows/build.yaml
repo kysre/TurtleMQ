@@ -25,11 +25,11 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v5
         with:
+          file: ./leader/Dockerfile
           push: true
-          target: leader
           tags: kysre/turtlemq:leader-latest
   
-  data-node:
+  datanode:
     runs-on: ubuntu-latest
     steps:
       -
@@ -48,6 +48,6 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v5
         with:
+          file: ./datanode/Dockerfile
           push: true
-          target: data-node
           tags: kysre/turtlemq:datanode-latest
