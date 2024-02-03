@@ -6,10 +6,10 @@ ARG NO_PROXY
 
 RUN apt update --fix-missing
 
-ADD Makefile go.mod go.sum ./
+ADD leader/Makefile leader/go.mod leader/go.sum ./
 RUN go mod download
 
-COPY . .
+COPY leader .
 RUN go build -o $@ leader ./cmd/$@
 
 
