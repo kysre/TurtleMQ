@@ -23,7 +23,7 @@ class QueueClient:
             cls.stub = queue_pb2_grpc.QueueStub(channel)
         return cls.stub
 
-    async def push(self, key: str, value: List[bytes]):
+    def push(self, key: str, value: List[bytes]):
         try:
             stub = self.get_stub(HOST, PORT)
 
@@ -32,17 +32,36 @@ class QueueClient:
         except grpc.RpcError as e:
             print(f"Error in pushing: {e}.")
 
-    async def pull(self):
+    def pull(self):
         try:
             stub = self.get_stub(HOST, PORT)
             response = stub.Pull(f())
             print(f"key and message: {response.key} - {response.value}")
-            await self.ack(response.key)
             return response
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
 
-    async def ack(self, acknowledgement: str):
+    def ack(self, acknowledgement: str):
+        try:
+            stub = self.get_stub(HOST, PORT)
+            ack_request = queue_pb2.AcknowledgePullRequest(key=acknowledgement)
+            stub.AcknowledgePull(ack_request)
+            return True
+        except grpc.RpcError as e:
+            print(f"Error in acknowledgement: {e}")
+            return False
+
+    async def non_blocking_pull(self):
+        try:
+            stub = self.get_stub(HOST, PORT)
+            response = stub.Pull(f())
+            print(f"key and message: {response.key} - {response.value}")
+            await self.non_blocking_ack(response.key)
+            return response
+        except grpc.RpcError as e:
+            print(f"Error in pulling: {e}.")
+
+    async def non_blocking_ack(self, acknowledgement: str):
         try:
             stub = self.get_stub(HOST, PORT)
             ack_request = queue_pb2.AcknowledgePullRequest(key=acknowledgement)
@@ -55,7 +74,7 @@ class QueueClient:
     async def subscribe(self):
         try:
             while True:
-                await self.pull()
+                await self.non_blocking_pull()
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
         pass
