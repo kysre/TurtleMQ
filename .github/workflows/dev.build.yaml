@@ -28,7 +28,7 @@ jobs:
         with:
           push: true
           target: leader
-          tags: kysre/TurtleMQ:leader-${{ steps.extract_branch.outputs.branch }}
+          tags: kysre/turtlemq:leader-${{ steps.extract_branch.outputs.branch }}
   
   data-node:
     runs-on: ubuntu-latest
@@ -51,4 +51,4 @@ jobs:
         with:
           push: true
           target: data-node
-          tags: kysre/TurtleMQ:datanode-${{ steps.extract_branch.outputs.branch }}
+          tags: kysre/turtlemq:datanode-${{ steps.extract_branch.outputs.branch }}

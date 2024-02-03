@@ -27,7 +27,7 @@ jobs:
         with:
           push: true
           target: leader
-          tags: kysre/TurtleMQ:leader-latest
+          tags: kysre/turtlemq:leader-latest
   
   data-node:
     runs-on: ubuntu-latest
@@ -50,4 +50,4 @@ jobs:
         with:
           push: true
           target: data-node
-          tags: kysre/TurtleMQ:datanode-latest
+          tags: kysre/turtlemq:datanode-latest
