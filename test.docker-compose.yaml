@@ -1,0 +1,23 @@
+version: '3'
+services:
+  leader_0:
+    image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
+    restart: unless-stopped
+    ports:
+      - '8000:8888'
+
+  datanode:
+    image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_PORT=8000
+    deploy:
+      mode: replicated
+      replicas: ${DATANODE_REPLICA_COUNT}
+    volumes:
+      - datanode_vol:/var/lib/turtlemq/data/
+
+volumes:
+  datanode_vol:
+    driver: local
