@@ -3,6 +3,8 @@ services:
   leader_0:
     image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
     restart: unless-stopped
+    environment:
+      - LEADER_LOGGING_LEVEL=info
     ports:
       - '8000:8888'
 
