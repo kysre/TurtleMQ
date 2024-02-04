@@ -53,9 +53,13 @@ func serve(cmd *cobra.Command, args []string) {
 	go func() {
 		defer serverWaitGroup.Done()
 
+		logger.Info("Start serving...")
+
 		if err := queueServer.Serve(); err != nil {
 			panicWithError(err, "failed to serve")
 		}
+
+		logger.Info("End serving...")
 	}()
 
 	if err := declareReadiness(); err != nil {
@@ -82,7 +86,7 @@ func getDataNodeDirectoryOrPanic(conf *Config) *models.DataNodeDirectory {
 	if directory == nil {
 		panic("DataNodeDirectory is nil")
 	}
-	tasks.RunHealthChecks(directory, conf.Leader.DataNodeStateCheckPeriod)
+	go tasks.RunHealthChecks(directory, conf.Leader.DataNodeStateCheckPeriod)
 	return directory
 }
 
@@ -120,7 +124,9 @@ func provideServer(
 		return nil, err
 	}
 	baseServer.RegisterQueueServer(queueServicer)
+	logger.Info("Registered Queue Server")
 	baseServer.RegisterLeaderServer(leaderServicer)
+	logger.Info("Registered Leader Server")
 	return baseServer, nil
 }
 

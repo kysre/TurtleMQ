@@ -46,6 +46,7 @@ func (c *queueCore) Push(
 func (c *queueCore) Pull(
 	ctx context.Context, request *emptypb.Empty,
 ) (*queue.PullResponse, error) {
+	c.logger.Info("Received Pull request")
 	client, err := c.balancer.GetPullDataNodeClient(ctx)
 	if err != nil {
 		return nil, err
@@ -64,6 +65,7 @@ func (c *queueCore) AcknowledgePull(
 	ctx context.Context, request *queue.AcknowledgePullRequest,
 ) (*emptypb.Empty, error) {
 	key := request.GetKey()
+	c.logger.Info(fmt.Sprintf("Received Ack Pull key=%s", key))
 	client, err := c.balancer.GetPushDataNodeClient(ctx, key)
 	if err != nil {
 		return nil, err
