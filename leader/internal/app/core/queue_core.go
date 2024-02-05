@@ -51,11 +51,13 @@ func (c *queueCore) Pull(
 	if err != nil {
 		return nil, err
 	}
+	c.logger.Info(fmt.Sprintf("Pull req datanode client: %v", client))
 	dataNodeRes, err := client.Pull(ctx, request)
 	if err != nil {
 		return nil, err
 	}
 	message := dataNodeRes.GetMessage()
+	c.logger.Info(fmt.Sprintf("Pull message from datanode: %v", message))
 	response := queue.PullResponse{Key: message.GetKey()}
 	response.Value = append(response.Value, message.GetValue()...)
 	return &response, nil
