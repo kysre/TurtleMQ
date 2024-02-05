@@ -9,12 +9,10 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from client_py import queue_pb2_grpc
 from client_py import queue_pb2
 
-HOST, PORT = "localhost", "8888"
-
 
 class QueueClient:
     stub = None
-    HOST, PORT = "localhost", "8888"
+    HOST, PORT = "localhost", "8000"
 
     @classmethod
     def get_stub(cls, host: str, port: str):
@@ -25,7 +23,7 @@ class QueueClient:
 
     def push(self, key: str, value: List[bytes]):
         try:
-            stub = self.get_stub(HOST, PORT)
+            stub = self.get_stub(self.HOST, self.PORT)
 
             stub.Push(queue_pb2.PushRequest(key=key, value=value))
 
@@ -34,7 +32,7 @@ class QueueClient:
 
     def pull(self):
         try:
-            stub = self.get_stub(HOST, PORT)
+            stub = self.get_stub(self.HOST, self.PORT)
             response = stub.Pull(f())
             print(f"key and message: {response.key} - {response.value}")
             return response
@@ -43,17 +41,18 @@ class QueueClient:
 
     def ack(self, acknowledgement: str):
         try:
-            stub = self.get_stub(HOST, PORT)
-            ack_request = queue_pb2.AcknowledgePullRequest(key=acknowledgement)
-            stub.AcknowledgePull(ack_request)
-            return True
+            stub = self.get_stub(self.HOST, self.PORT)
+            stub.AcknowledgePull(queue_pb2.AcknowledgePullRequest(key=acknowledgement))
+            # ack_request = queue_pb2.AcknowledgePullRequest(key=acknowledgement)
+            # stub.AcknowledgePull(ack_request)
+            return None
         except grpc.RpcError as e:
             print(f"Error in acknowledgement: {e}")
             return False
 
     async def non_blocking_pull(self):
         try:
-            stub = self.get_stub(HOST, PORT)
+            stub = self.get_stub(self.HOST, self.PORT)
             response = stub.Pull(f())
             print(f"key and message: {response.key} - {response.value}")
             await self.non_blocking_ack(response.key)
@@ -63,7 +62,7 @@ class QueueClient:
 
     async def non_blocking_ack(self, acknowledgement: str):
         try:
-            stub = self.get_stub(HOST, PORT)
+            stub = self.get_stub(self.HOST, self.PORT)
             ack_request = queue_pb2.AcknowledgePullRequest(key=acknowledgement)
             stub.AcknowledgePull(ack_request)
             return True
