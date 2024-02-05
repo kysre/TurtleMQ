@@ -64,7 +64,7 @@ def serve():
         leader_host, leader_port = ConfigManager.get_prop('leader_host'), ConfigManager.get_prop('leader_port')
         channel = grpc.insecure_channel(f"{leader_host}:{leader_port}")
         stub = leader_pb2_grpc.LeaderStub(channel)
-        add_request = leader_pb2.AddDataNodeRequest(f'{datanode_name}:{port}')
+        add_request = leader_pb2.AddDataNodeRequest(address=f'{datanode_name}:{port}')
         stub.AddDataNode(add_request)
     except grpc.RpcError as e:
         print(f"Error in notifying leader: {e}.")
