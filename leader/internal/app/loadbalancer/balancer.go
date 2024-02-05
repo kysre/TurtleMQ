@@ -16,7 +16,8 @@ import (
 
 type Balancer interface {
 	AddDataNodeToHashCircle(datanode *models.DataNode) error
-	GetPushDataNodeClient(ctx context.Context, token string) (clients.DataNodeClient, error)
+	GetPushDataNodeAndReplicaClient(
+		ctx context.Context, token string) (clients.DataNodeClient, clients.DataNodeClient, error)
 	GetPullDataNodeClient(ctx context.Context) (clients.DataNodeClient, error)
 }
 
@@ -38,21 +39,31 @@ func NewBalancer(logger *logrus.Logger, directory *models.DataNodeDirectory) Bal
 	}
 }
 
-func (b *balancer) GetPushDataNodeClient(ctx context.Context, token string) (clients.DataNodeClient, error) {
+func (b *balancer) GetPushDataNodeAndReplicaClient(
+	ctx context.Context, token string) (clients.DataNodeClient, clients.DataNodeClient, error) {
 	hash, err := b.getHash(token)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+	// Calc datanode & it's replica indexes
 	index, err := b.getLessOrEqualIndexInHashCircle(hash)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	dnHash := b.datanodeHashSortedSlice[index]
-	dn, err := b.directory.GetDataNode(ctx, b.dataNodeHashMap[dnHash])
+	replicaIndex := b.getDataNodeReplicaIndex(index)
+	// Get datanode
+	dataNodeHash := b.datanodeHashSortedSlice[index]
+	dataNode, err := b.directory.GetDataNode(ctx, b.dataNodeHashMap[dataNodeHash])
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return dn.Client, nil
+	// Get datanode replica
+	dataNodeReplicaHash := b.datanodeHashSortedSlice[replicaIndex]
+	dataNodeReplica, err := b.directory.GetDataNode(ctx, b.dataNodeHashMap[dataNodeReplicaHash])
+	if err != nil {
+		return nil, nil, err
+	}
+	return dataNode.Client, dataNodeReplica.Client, nil
 }
 
 func (b *balancer) GetPullDataNodeClient(ctx context.Context) (clients.DataNodeClient, error) {
@@ -132,4 +143,9 @@ func (b *balancer) getLessOrEqualIndexInHashCircle(hash string) (int, error) {
 		}
 	}
 	return index, nil
+}
+
+// Hash Ring implementation
+func (b *balancer) getDataNodeReplicaIndex(i int) int {
+	return (i + 1) % len(b.datanodeHashSortedSlice)
 }
