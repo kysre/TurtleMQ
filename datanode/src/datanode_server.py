@@ -38,6 +38,12 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
         except grpc.RpcError as e:
             logger.exception(f"Error in acknowledging. {e}")
 
+    def IsHealthy(self, request, context):
+        try:
+            return empty_pb2.Empty()
+        except grpc.RpcError as e:
+            logger.exception(f"Error in acknowledging. {e}")
+
 
 def serve():
     port = ConfigManager.get_prop('server_port')
@@ -58,7 +64,7 @@ def serve():
         leader_host, leader_port = ConfigManager.get_prop('leader_host'), ConfigManager.get_prop('leader_port')
         channel = grpc.insecure_channel(f"{leader_host}:{leader_port}")
         stub = leader_pb2_grpc.LeaderStub(channel)
-        add_request = leader_pb2.AddDataNodeRequest(f'{datanode_name}')
+        add_request = leader_pb2.AddDataNodeRequest(f'{datanode_name}:{port}')
         stub.AddDataNode(add_request)
     except grpc.RpcError as e:
         print(f"Error in notifying leader: {e}.")
