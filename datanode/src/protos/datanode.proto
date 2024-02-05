@@ -53,7 +53,7 @@ service DataNode {
   // Data syncing Operation
   rpc ReadPartition(ReadPartitionRequest) returns (stream ReadPartitionResponse);
   rpc WritePartition(stream WritePartitionRequest) returns (google.protobuf.Empty);
-  rpc PurgeReplicaData(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc PurgeReplicaData(google.protobuf.Empty) returns (google.protobuf.Empty); // remove replica
   // Cluster consensus
   rpc IsHealthy(google.protobuf.Empty) returns (google.protobuf.Empty);
   rpc GetRemainingMessagesCount(google.protobuf.Empty) returns (GetRemainingMessagesCountRequest);

@@ -3,6 +3,8 @@ from concurrent import futures
 from google.protobuf import empty_pb2
 import protos.datanode_pb2_grpc as datanode_pb2_grpc
 import protos.datanode_pb2 as datanode_pb2
+import leader_protos.leader_pb2_grpc as leader_pb2_grpc
+import leader_protos.leader_pb2 as leader_pb2
 from configs.configs import ConfigManager
 from shared_partition import SharedPartitions
 from loguru import logger
@@ -42,12 +44,25 @@ def serve():
     partitions_count = int(ConfigManager.get_prop('partition_count'))
     home_path = ConfigManager.get_prop('partition_home_path')
 
+    datanode_name = ConfigManager.get_prop('datanode_name')
+
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     datanode_pb2_grpc.add_DataNodeServicer_to_server(DataNode(partitions_count, home_path), server)
 
     server.add_insecure_port('[::]:' + port)
     server.start()
     logger.info('Server started, listening on ' + port)
+
+    # notify leader
+    try:
+        leader_host, leader_port = ConfigManager.get_prop('leader_host'), ConfigManager.get_prop('leader_port')
+        channel = grpc.insecure_channel(f"{leader_host}:{leader_port}")
+        stub = leader_pb2_grpc.LeaderStub(channel)
+        add_request = leader_pb2.AddDataNodeRequest(f'{datanode_name}')
+        stub.AddDataNode(add_request)
+    except grpc.RpcError as e:
+        print(f"Error in notifying leader: {e}.")
+
     server.wait_for_termination()
 
 

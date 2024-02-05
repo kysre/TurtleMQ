@@ -16,7 +16,10 @@ class ConfigManager:
         encoding_method=env_config('ENCODING_METHOD'),
         pull_timeout=env_config('PULL_TIMEOUT'),
         pending_timeout=env_config('PENDING_TIMEOUT'),
-        cleaner_period=env_config('CLEANER_PERIOD')
+        cleaner_period=env_config('CLEANER_PERIOD'),
+        leader_host=env_config('LEADER_HOST'),
+        leader_port=env_config('LEADER_PORT'),
+        datanode_name=env_config('DATANODE_NAME'),
     )
 
     @staticmethod
