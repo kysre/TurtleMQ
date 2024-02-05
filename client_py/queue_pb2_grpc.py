@@ -16,17 +16,17 @@ class QueueStub(object):
             channel: A grpc.Channel.
         """
         self.Push = channel.unary_unary(
-                '/client.Queue/Push',
+                '/queue.Queue/Push',
                 request_serializer=client__py_dot_queue__pb2.PushRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
         self.Pull = channel.unary_unary(
-                '/client.Queue/Pull',
+                '/queue.Queue/Pull',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
                 response_deserializer=client__py_dot_queue__pb2.PullResponse.FromString,
                 )
         self.AcknowledgePull = channel.unary_unary(
-                '/client.Queue/AcknowledgePull',
+                '/queue.Queue/AcknowledgePull',
                 request_serializer=client__py_dot_queue__pb2.AcknowledgePullRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
@@ -73,7 +73,7 @@ def add_QueueServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'client.Queue', rpc_method_handlers)
+            'queue.Queue', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -92,7 +92,7 @@ class Queue(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/client.Queue/Push',
+        return grpc.experimental.unary_unary(request, target, '/queue.Queue/Push',
             client__py_dot_queue__pb2.PushRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
@@ -109,7 +109,7 @@ class Queue(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/client.Queue/Pull',
+        return grpc.experimental.unary_unary(request, target, '/queue.Queue/Pull',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             client__py_dot_queue__pb2.PullResponse.FromString,
             options, channel_credentials,
@@ -126,7 +126,7 @@ class Queue(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/client.Queue/AcknowledgePull',
+        return grpc.experimental.unary_unary(request, target, '/queue.Queue/AcknowledgePull',
             client__py_dot_queue__pb2.AcknowledgePullRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,

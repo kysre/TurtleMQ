@@ -3,7 +3,7 @@ syntax = "proto3";
 // protoc -I. --go_out=plugins=grpc:$GOPATH/src ./api/queue/queue.proto
 // python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. ./client_py/queue.proto
 
-package client;
+package queue;
 
 import "google/protobuf/empty.proto";
 
