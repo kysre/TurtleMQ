@@ -25,6 +25,3 @@ class ConfigManager:
     @staticmethod
     def get_prop(key):
         return ConfigManager.configs[key]
-=======
-        return ConfigManager.configs[key]
->>>>>>> origin/datanode-dev
