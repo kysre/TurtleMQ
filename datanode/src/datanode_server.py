@@ -22,8 +22,10 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
 
     def Pull(self, request, context):
         try:
+            logger.info(f"received a pull message: {request}")
             message = self.shared_partition.pull()
             response = datanode_pb2.PullResponse(message=message)
+            logger.info(f"send a pull message: {message}")
             return response
         except grpc.RpcError as e:
             logger.exception(e)
@@ -33,6 +35,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
     def AcknowledgePull(self, request, context):
         try:
             key = request.key
+            logger.info(f"received an acknowledge message: {key}")
             self.shared_partition.acknowledge(key)
             return empty_pb2.Empty()
         except grpc.RpcError as e:
