@@ -14,11 +14,13 @@ class TestQueueClient(TestCase):
         self.client = QueueClient()
 
     def test_push_pull(self):
-        self.assertEqual(sample_push_pull(self.client), [b"test_value"])
+        self.client.push("test key", [b'test value'])
+        self.assertEqual(self.client.pull().value, [b"test value"])
         # self.fail()
 
     def test_ack(self):
-        ack_res = asyncio.run(self.client.ack("test key"))
+        ack_res = self.client.ack("test key")
+        # ack_res = asyncio.run(self.client.ack("test key"))
         self.assertTrue(ack_res)
 
     def test_concurrent_push_without_order(self):
