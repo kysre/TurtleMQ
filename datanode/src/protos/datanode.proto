@@ -2,6 +2,7 @@ syntax = "proto3";
 
 // protoc -I. --go_out=plugins=grpc:$GOPATH/src ./api/queue/queue.proto
 // python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. ./api/datanode.proto
+// python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. ./datanode/src/protos/datanode.proto
 
 package datanode;
 
@@ -41,7 +42,7 @@ message WritePartitionRequest {
   repeated QueueMessage partition_messages = 3;
 }
 
-message GetRemainingMessagesCountRequest {
+message GetRemainingMessagesCountResponse {
   int32 remaining_messages_count = 1;
 }
 
@@ -56,5 +57,5 @@ service DataNode {
   rpc PurgeReplicaData(google.protobuf.Empty) returns (google.protobuf.Empty);
   // Cluster consensus
   rpc IsHealthy(google.protobuf.Empty) returns (google.protobuf.Empty);
-  rpc GetRemainingMessagesCount(google.protobuf.Empty) returns (GetRemainingMessagesCountRequest);
+  rpc GetRemainingMessagesCount(google.protobuf.Empty) returns (GetRemainingMessagesCountResponse);
 }

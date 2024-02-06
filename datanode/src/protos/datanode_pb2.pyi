@@ -60,7 +60,7 @@ class WritePartitionRequest(_message.Message):
     partition_messages: _containers.RepeatedCompositeFieldContainer[QueueMessage]
     def __init__(self, partition_index: _Optional[int] = ..., is_replica: bool = ..., partition_messages: _Optional[_Iterable[_Union[QueueMessage, _Mapping]]] = ...) -> None: ...
 
-class GetRemainingMessagesCountRequest(_message.Message):
+class GetRemainingMessagesCountResponse(_message.Message):
     __slots__ = ("remaining_messages_count",)
     REMAINING_MESSAGES_COUNT_FIELD_NUMBER: _ClassVar[int]
     remaining_messages_count: int
