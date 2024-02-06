@@ -46,6 +46,14 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
         except grpc.RpcError as e:
             logger.exception(f"Error in acknowledging. {e}")
 
+    def GetRemainingMessagesCount(self, request, context):
+        try:
+            count = self.shared_partition.get_remaining_messages_count()
+            res = datanode_pb2.GetRemainingMessagesCountResponse(remaining_messages_count=count)
+            return res
+        except grpc.RpcError as e:
+            logger.exception(f"Error in getting remaining messages count: {e}")
+
 
 def serve():
     port = ConfigManager.get_prop('server_port')
