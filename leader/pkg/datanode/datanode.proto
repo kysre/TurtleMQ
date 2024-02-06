@@ -20,7 +20,7 @@ message PushRequest {
 }
 
 message PullResponse {
-  QueueMessage message = 2;
+  QueueMessage message = 1;
 }
 
 message AcknowledgePullRequest {
