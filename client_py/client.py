@@ -21,7 +21,7 @@ class QueueClient:
             cls.stub = queue_pb2_grpc.QueueStub(channel)
         return cls.stub
 
-    def push(self, key: str, value: List[bytes]):
+    def push(self, key: str, value: bytes):
         try:
             stub = self.get_stub(self.HOST, self.PORT)
 

@@ -11,8 +11,8 @@ class QueueMessage(_message.Message):
     KEY_FIELD_NUMBER: _ClassVar[int]
     VALUE_FIELD_NUMBER: _ClassVar[int]
     key: str
-    value: _containers.RepeatedScalarFieldContainer[bytes]
-    def __init__(self, key: _Optional[str] = ..., value: _Optional[_Iterable[bytes]] = ...) -> None: ...
+    value: bytes
+    def __init__(self, key: _Optional[str] = ..., value: _Optional[bytes] = ...) -> None: ...
 
 class PushRequest(_message.Message):
     __slots__ = ("message", "is_replica")
