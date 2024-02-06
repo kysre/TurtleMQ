@@ -11,7 +11,7 @@ option go_package = "github.com/kysre/TurtleMQ/leader/pkg/datanode";
 
 message QueueMessage {
   string key = 1;
-  repeated bytes value = 2;
+  bytes value = 2;
 }
 
 message PushRequest {
