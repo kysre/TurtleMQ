@@ -10,12 +10,12 @@ option go_package = "github.com/kysre/TurtleMQ/leader/pkg/queue";
 
 message PushRequest {
   string key = 1;
-  repeated bytes value = 2;
+  bytes value = 2;
 }
 
 message PullResponse {
   string key = 1;
-  repeated bytes value = 2;
+  bytes value = 2;
 }
 
 message AcknowledgePullRequest {
