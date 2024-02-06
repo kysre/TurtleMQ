@@ -111,6 +111,9 @@ class Partition:
     def add_message(self, message: datanode_pb2.QueueMessage):
         self.messages.append(Message(message, self.dir))
 
+    def get_remaining_message_count(self) -> int:
+        return len(self.messages)
+
 
 class SharedPartitions:
     pull_timeout = int(ConfigManager.get_prop('pull_timeout'))
@@ -170,6 +173,12 @@ class SharedPartitions:
 
     def get_dest_partition(self, key):
         return hash_function(key, self.partition_count)
+
+    def get_remaining_messages_count(self) -> int:
+        remaining_count = 0
+        for partition in self.partitions:
+            remaining_count += partition.get_remaining_message_count()
+        return remaining_count
 
 
 def clean_partitions(shared_partition: SharedPartitions):
