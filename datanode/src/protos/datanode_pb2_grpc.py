@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from datanode.src.protos import datanode_pb2 as datanode_dot_src_dot_protos_dot_datanode__pb2
+import protos.datanode_pb2 as datanode__pb2
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
@@ -17,27 +17,27 @@ class DataNodeStub(object):
         """
         self.Push = channel.unary_unary(
                 '/datanode.DataNode/Push',
-                request_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.PushRequest.SerializeToString,
+                request_serializer=datanode__pb2.PushRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
         self.Pull = channel.unary_unary(
                 '/datanode.DataNode/Pull',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.PullResponse.FromString,
+                response_deserializer=datanode__pb2.PullResponse.FromString,
                 )
         self.AcknowledgePull = channel.unary_unary(
                 '/datanode.DataNode/AcknowledgePull',
-                request_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.AcknowledgePullRequest.SerializeToString,
+                request_serializer=datanode__pb2.AcknowledgePullRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
-        self.ReadPartition = channel.unary_stream(
+        self.ReadPartition = channel.unary_unary(
                 '/datanode.DataNode/ReadPartition',
-                request_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionRequest.SerializeToString,
-                response_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionResponse.FromString,
+                request_serializer=datanode__pb2.ReadPartitionRequest.SerializeToString,
+                response_deserializer=datanode__pb2.ReadPartitionResponse.FromString,
                 )
-        self.WritePartition = channel.stream_unary(
+        self.WritePartition = channel.unary_unary(
                 '/datanode.DataNode/WritePartition',
-                request_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.WritePartitionRequest.SerializeToString,
+                request_serializer=datanode__pb2.WritePartitionRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
         self.PurgeReplicaData = channel.unary_unary(
@@ -53,7 +53,7 @@ class DataNodeStub(object):
         self.GetRemainingMessagesCount = channel.unary_unary(
                 '/datanode.DataNode/GetRemainingMessagesCount',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.GetRemainingMessagesCountResponse.FromString,
+                response_deserializer=datanode__pb2.GetRemainingMessagesCountResponse.FromString,
                 )
 
 
@@ -86,7 +86,7 @@ class DataNodeServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def WritePartition(self, request_iterator, context):
+    def WritePartition(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -116,27 +116,27 @@ def add_DataNodeServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Push': grpc.unary_unary_rpc_method_handler(
                     servicer.Push,
-                    request_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.PushRequest.FromString,
+                    request_deserializer=datanode__pb2.PushRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'Pull': grpc.unary_unary_rpc_method_handler(
                     servicer.Pull,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.PullResponse.SerializeToString,
+                    response_serializer=datanode__pb2.PullResponse.SerializeToString,
             ),
             'AcknowledgePull': grpc.unary_unary_rpc_method_handler(
                     servicer.AcknowledgePull,
-                    request_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.AcknowledgePullRequest.FromString,
+                    request_deserializer=datanode__pb2.AcknowledgePullRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
-            'ReadPartition': grpc.unary_stream_rpc_method_handler(
+            'ReadPartition': grpc.unary_unary_rpc_method_handler(
                     servicer.ReadPartition,
-                    request_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionRequest.FromString,
-                    response_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionResponse.SerializeToString,
+                    request_deserializer=datanode__pb2.ReadPartitionRequest.FromString,
+                    response_serializer=datanode__pb2.ReadPartitionResponse.SerializeToString,
             ),
-            'WritePartition': grpc.stream_unary_rpc_method_handler(
+            'WritePartition': grpc.unary_unary_rpc_method_handler(
                     servicer.WritePartition,
-                    request_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.WritePartitionRequest.FromString,
+                    request_deserializer=datanode__pb2.WritePartitionRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
             'PurgeReplicaData': grpc.unary_unary_rpc_method_handler(
@@ -152,7 +152,7 @@ def add_DataNodeServicer_to_server(servicer, server):
             'GetRemainingMessagesCount': grpc.unary_unary_rpc_method_handler(
                     servicer.GetRemainingMessagesCount,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.GetRemainingMessagesCountResponse.SerializeToString,
+                    response_serializer=datanode__pb2.GetRemainingMessagesCountResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -176,7 +176,7 @@ class DataNode(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/Push',
-            datanode_dot_src_dot_protos_dot_datanode__pb2.PushRequest.SerializeToString,
+            datanode__pb2.PushRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -194,7 +194,7 @@ class DataNode(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/Pull',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            datanode_dot_src_dot_protos_dot_datanode__pb2.PullResponse.FromString,
+            datanode__pb2.PullResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -210,7 +210,7 @@ class DataNode(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/AcknowledgePull',
-            datanode_dot_src_dot_protos_dot_datanode__pb2.AcknowledgePullRequest.SerializeToString,
+            datanode__pb2.AcknowledgePullRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -226,14 +226,14 @@ class DataNode(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/datanode.DataNode/ReadPartition',
-            datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionRequest.SerializeToString,
-            datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/ReadPartition',
+            datanode__pb2.ReadPartitionRequest.SerializeToString,
+            datanode__pb2.ReadPartitionResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def WritePartition(request_iterator,
+    def WritePartition(request,
             target,
             options=(),
             channel_credentials=None,
@@ -243,8 +243,8 @@ class DataNode(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.stream_unary(request_iterator, target, '/datanode.DataNode/WritePartition',
-            datanode_dot_src_dot_protos_dot_datanode__pb2.WritePartitionRequest.SerializeToString,
+        return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/WritePartition',
+            datanode__pb2.WritePartitionRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -296,6 +296,6 @@ class DataNode(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/GetRemainingMessagesCount',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            datanode_dot_src_dot_protos_dot_datanode__pb2.GetRemainingMessagesCountResponse.FromString,
+            datanode__pb2.GetRemainingMessagesCountResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
