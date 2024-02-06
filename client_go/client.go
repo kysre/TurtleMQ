@@ -12,11 +12,11 @@ import (
 	"github.com/kysre/TurtleMQ/client_go/queue"
 )
 
-type SubscribeFunction func(key string, value [][]byte)
+type SubscribeFunction func(key string, value []byte)
 
 type QueueClient interface {
-	Push(key string, value [][]byte)
-	Pull() (string, [][]byte)
+	Push(key string, value []byte)
+	Pull() (string, []byte)
 	Subscribe(function SubscribeFunction)
 }
 
@@ -36,7 +36,7 @@ type queueClient struct {
 	client queue.QueueClient
 }
 
-func (c *queueClient) Push(key string, value [][]byte) {
+func (c *queueClient) Push(key string, value []byte) {
 	ctx := context.Background()
 	req := queue.PushRequest{Key: key}
 	req.Value = append(req.Value, value...)
@@ -46,7 +46,7 @@ func (c *queueClient) Push(key string, value [][]byte) {
 	}
 }
 
-func (c *queueClient) Pull() (string, [][]byte) {
+func (c *queueClient) Pull() (string, []byte) {
 	ctx := context.Background()
 	res, err := c.client.Pull(ctx, &emptypb.Empty{})
 	if err != nil {
