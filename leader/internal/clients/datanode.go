@@ -13,6 +13,7 @@ import (
 
 type DataNodeClient interface {
 	IsHealthy(ctx context.Context) bool
+	GetRemainingMessagesCount(ctx context.Context) (int32, error)
 	Push(ctx context.Context, request *datanode.PushRequest) (*empty.Empty, error)
 	Pull(ctx context.Context, request *empty.Empty) (*datanode.PullResponse, error)
 	AcknowledgePull(ctx context.Context, request *datanode.AcknowledgePullRequest) (*empty.Empty, error)
@@ -36,6 +37,14 @@ func NewDataNodeClient(addr string) (DataNodeClient, error) {
 func (d *dataNodeClient) IsHealthy(ctx context.Context) bool {
 	_, err := d.client.IsHealthy(ctx, &emptypb.Empty{})
 	return err == nil
+}
+
+func (d *dataNodeClient) GetRemainingMessagesCount(ctx context.Context) (int32, error) {
+	res, err := d.client.GetRemainingMessagesCount(ctx, &emptypb.Empty{})
+	if err != nil {
+		return 0, err
+	}
+	return res.GetRemainingMessagesCount(), nil
 }
 
 func (d *dataNodeClient) Push(ctx context.Context, request *datanode.PushRequest) (*empty.Empty, error) {
