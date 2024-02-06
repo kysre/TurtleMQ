@@ -12,7 +12,6 @@ from loguru import logger
 
 class DataNode(datanode_pb2_grpc.DataNodeServicer):
     def __init__(self, partition_count=1, home_path='datanode/server/'):
-
         self.shared_partition = SharedPartitions(partition_count, home_path=home_path)
 
     def Push(self, request, context):
