@@ -176,10 +176,10 @@ class DataNode(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/Push',
-            datanode__pb2.PushRequest.SerializeToString,
-            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                             datanode__pb2.PushRequest.SerializeToString,
+                                             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                                             options, channel_credentials,
+                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def Pull(request,
@@ -193,10 +193,10 @@ class DataNode(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/Pull',
-            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            datanode__pb2.PullResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                                             datanode__pb2.PullResponse.FromString,
+                                             options, channel_credentials,
+                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def AcknowledgePull(request,
@@ -210,10 +210,10 @@ class DataNode(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/AcknowledgePull',
-            datanode__pb2.AcknowledgePullRequest.SerializeToString,
-            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                             datanode__pb2.AcknowledgePullRequest.SerializeToString,
+                                             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                                             options, channel_credentials,
+                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def ReadPartition(request,
@@ -227,10 +227,10 @@ class DataNode(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/ReadPartition',
-            datanode__pb2.ReadPartitionRequest.SerializeToString,
-            datanode__pb2.ReadPartitionResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                             datanode__pb2.ReadPartitionRequest.SerializeToString,
+                                             datanode__pb2.ReadPartitionResponse.FromString,
+                                             options, channel_credentials,
+                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def WritePartition(request,
@@ -244,10 +244,10 @@ class DataNode(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/WritePartition',
-            datanode__pb2.WritePartitionRequest.SerializeToString,
-            google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                             datanode__pb2.WritePartitionRequest.SerializeToString,
+                                             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                                             options, channel_credentials,
+                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def PurgeReplicaData(request,
@@ -295,7 +295,7 @@ class DataNode(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/GetRemainingMessagesCount',
-            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            datanode__pb2.GetRemainingMessagesCountResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+                                             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                                             datanode__pb2.GetRemainingMessagesCountResponse.FromString,
+                                             options, channel_credentials,
+                                             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
