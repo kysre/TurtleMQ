@@ -30,12 +30,12 @@ class QueueClient:
         except grpc.RpcError as e:
             print(f"Error in pushing: {e}.")
 
-    def pull(self):
+    def pull(self) -> (str, bytes):
         try:
             stub = self.get_stub(self.HOST, self.PORT)
             response = stub.Pull(f())
             self.ack(response.key)
-            return response
+            return response.key, response.value
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
 
