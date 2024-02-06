@@ -27,11 +27,10 @@ class Message:
                 line = file_system.readline()
         assert line is not None
         message = json.loads(line)
+        value = message['value']
         decoded_value = message['value']
-        messageProto = datanode_pb2.QueueMessage(key=message['key'])
-        encoded_value = decoded_value[0].encode(Message.encoding_method)
-        messageProto.value.extend([encoded_value])
-        messageProto = datanode_pb2.QueueMessage(key=message['key'], value=[encoded_value])
+        encoded_value = [b.encode(Message.encoding_method) for b in decoded_value]
+        messageProto = datanode_pb2.QueueMessage(key=message['key'], value=encoded_value)
         return messageProto
 
     def pend_message(self):
