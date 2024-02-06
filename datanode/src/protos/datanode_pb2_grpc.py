@@ -30,12 +30,12 @@ class DataNodeStub(object):
                 request_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.AcknowledgePullRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
                 )
-        self.ReadPartition = channel.unary_stream(
+        self.ReadPartition = channel.unary_unary(
                 '/datanode.DataNode/ReadPartition',
                 request_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionRequest.SerializeToString,
                 response_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionResponse.FromString,
                 )
-        self.WritePartition = channel.stream_unary(
+        self.WritePartition = channel.unary_unary(
                 '/datanode.DataNode/WritePartition',
                 request_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.WritePartitionRequest.SerializeToString,
                 response_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
@@ -86,7 +86,7 @@ class DataNodeServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def WritePartition(self, request_iterator, context):
+    def WritePartition(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -129,12 +129,12 @@ def add_DataNodeServicer_to_server(servicer, server):
                     request_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.AcknowledgePullRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             ),
-            'ReadPartition': grpc.unary_stream_rpc_method_handler(
+            'ReadPartition': grpc.unary_unary_rpc_method_handler(
                     servicer.ReadPartition,
                     request_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionRequest.FromString,
                     response_serializer=datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionResponse.SerializeToString,
             ),
-            'WritePartition': grpc.stream_unary_rpc_method_handler(
+            'WritePartition': grpc.unary_unary_rpc_method_handler(
                     servicer.WritePartition,
                     request_deserializer=datanode_dot_src_dot_protos_dot_datanode__pb2.WritePartitionRequest.FromString,
                     response_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
@@ -226,14 +226,14 @@ class DataNode(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/datanode.DataNode/ReadPartition',
+        return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/ReadPartition',
             datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionRequest.SerializeToString,
             datanode_dot_src_dot_protos_dot_datanode__pb2.ReadPartitionResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def WritePartition(request_iterator,
+    def WritePartition(request,
             target,
             options=(),
             channel_credentials=None,
@@ -243,7 +243,7 @@ class DataNode(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.stream_unary(request_iterator, target, '/datanode.DataNode/WritePartition',
+        return grpc.experimental.unary_unary(request, target, '/datanode.DataNode/WritePartition',
             datanode_dot_src_dot_protos_dot_datanode__pb2.WritePartitionRequest.SerializeToString,
             google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             options, channel_credentials,

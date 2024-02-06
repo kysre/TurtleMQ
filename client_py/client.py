@@ -35,6 +35,7 @@ class QueueClient:
             stub = self.get_stub(self.HOST, self.PORT)
             response = stub.Pull(f())
             print(f"key and message: {response.key} - {response.value}")
+            self.ack(response.key)
             return response
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
@@ -43,8 +44,6 @@ class QueueClient:
         try:
             stub = self.get_stub(self.HOST, self.PORT)
             stub.AcknowledgePull(queue_pb2.AcknowledgePullRequest(key=acknowledgement))
-            # ack_request = queue_pb2.AcknowledgePullRequest(key=acknowledgement)
-            # stub.AcknowledgePull(ack_request)
             return None
         except grpc.RpcError as e:
             print(f"Error in acknowledgement: {e}")
