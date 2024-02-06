@@ -47,6 +47,7 @@ func (b *balancer) GetPushDataNodeClient(ctx context.Context, token string) (cli
 	if err != nil {
 		return nil, err
 	}
+	b.logger.Info(fmt.Sprintf("key=%s push_to=%d, hash_key=%s", token, index, hash))
 	dnHash := b.datanodeHashSortedSlice[index]
 	dn, err := b.directory.GetDataNode(ctx, b.dataNodeHashMap[dnHash])
 	if err != nil {
