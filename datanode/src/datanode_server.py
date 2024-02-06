@@ -7,6 +7,7 @@ import leader_protos.leader_pb2_grpc as leader_pb2_grpc
 import leader_protos.leader_pb2 as leader_pb2
 from configs.configs import ConfigManager
 from shared_partition import SharedPartitions
+from shared_partition import clear_path
 from loguru import logger
 
 
@@ -50,6 +51,9 @@ def serve():
     port = ConfigManager.get_prop('server_port')
     partitions_count = int(ConfigManager.get_prop('partition_count'))
     home_path = ConfigManager.get_prop('partition_home_path')
+
+    # remove data-storage
+    clear_path(home_path)
 
     datanode_name = ConfigManager.get_prop('datanode_name')
 
