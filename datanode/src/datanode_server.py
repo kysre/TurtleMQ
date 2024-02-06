@@ -24,11 +24,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
         try:
             logger.info(f"received a pull message: {request}")
             message = self.shared_partition.pull()
-
-            logger.info(f"Message proto after reading from partition: {message}")
-
             response = datanode_pb2.PullResponse(message=message)
-            logger.info(f"send a pull response: {response}")
             return response
         except grpc.RpcError as e:
             logger.exception(e)

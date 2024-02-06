@@ -28,15 +28,10 @@ class Message:
         assert line is not None
         message = json.loads(line)
         decoded_value = message['value']
-        logger.info(f"value before encoding {decoded_value}")
         messageProto = datanode_pb2.QueueMessage(key=message['key'])
         encoded_value = decoded_value[0].encode(Message.encoding_method)
-        logger.info("Message proto before value")
-        logger.info(messageProto)
         messageProto.value.extend([encoded_value])
         messageProto = datanode_pb2.QueueMessage(key=message['key'], value=[encoded_value])
-        logger.info("Message proto after value")
-        logger.info(messageProto)
         return messageProto
 
     def pend_message(self):
@@ -58,9 +53,7 @@ class Message:
                 count_lines += 1
 
         with open(self.file_address, 'a') as file_system:
-            logger.info(f"Appending to file before decoding value={value}")
             value = [b.decode(Message.encoding_method) for b in value]
-            logger.info(f"Appending to file after decoding value={value}")
             file_system.write(json.dumps(dict(key=self.key, value=value, status=self.message_status.value)) + '\n')
 
         return count_lines

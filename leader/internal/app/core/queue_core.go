@@ -57,9 +57,7 @@ func (c *queueCore) Pull(
 		return nil, err
 	}
 	message := dataNodeRes.GetMessage()
-	c.logger.Info(fmt.Sprintf("Pull message from datanode: %v", message))
-	c.logger.Info(fmt.Sprintf("Pull message key from datanode: %s", message.GetKey()))
-	c.logger.Info(fmt.Sprintf("Pull message value from datanode: %v", message.GetValue()))
+	c.logger.Info(fmt.Sprintf("Pull response with key: %s", message.GetKey()))
 	response := queue.PullResponse{Key: message.GetKey()}
 	response.Value = append(response.Value, message.GetValue()...)
 	return &response, nil
