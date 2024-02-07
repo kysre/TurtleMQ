@@ -160,8 +160,9 @@ class SharedPartitions:
                     return available_partition
             raise PartitionsBusyError('There is no a free - non empty partition!')
 
-    def push(self, message):
-        partition_index = self.get_dest_partition(message.key)
+    def push(self, message, partition_index=None):
+        if partition_index is None:
+            partition_index = self.get_dest_partition(message.key)
         destination_partition = self.partitions[partition_index]
         destination_partition.add_message(message)
 

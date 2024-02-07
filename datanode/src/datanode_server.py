@@ -13,11 +13,15 @@ from loguru import logger
 
 class DataNode(datanode_pb2_grpc.DataNodeServicer):
     def __init__(self, partition_count=1, home_path='datanode/server/'):
-        self.shared_partition = SharedPartitions(partition_count, home_path=home_path)
+        self.shared_partition = SharedPartitions(partition_count, home_path=home_path + 'main/')
+        self.replica = SharedPartitions(partition_count, home_path=home_path + 'replica/')
 
     def Push(self, request, context):
         logger.info(f"received a push message: {request.message}")
-        self.shared_partition.push(request.message)
+        if request.is_replica:
+            self.replica.push(request.message)
+        else:
+            self.shared_partition.push(request.message)
         return empty_pb2.Empty()
 
     def Pull(self, request, context):
@@ -26,6 +30,30 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
             message = self.shared_partition.pull()
             response = datanode_pb2.PullResponse(message=message)
             return response
+        except grpc.RpcError as e:
+            logger.exception(e)
+        except Exception as e:
+            logger.exception(e)
+
+    def WritePartition(self, request, context):
+        try:
+            logger.info(f"received partition write message for partition: {request.partition_index}")
+            partition_messages = request.partition_messages
+            partition_index = request.partition_index
+            if request.is_replica:
+                for message in partition_messages:
+                    push_to_partition(partition_index, self.replica, message)
+            else:
+                for message in partition_messages:
+                    push_to_partition(partition_index, self.shared_partition, message)
+        except grpc.RpcError as e:
+            logger.exception(e)
+        except Exception as e:
+            logger.exception(e)
+
+    def ReadPartition(self, request, context):
+        try:
+            pass
         except grpc.RpcError as e:
             logger.exception(e)
         except Exception as e:
@@ -53,6 +81,12 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
             return res
         except grpc.RpcError as e:
             logger.exception(f"Error in getting remaining messages count: {e}")
+
+
+def push_to_partition(partition_index: int,
+                      shared_partition: SharedPartitions,
+                      partition_message):
+    shared_partition.push(partition_message, partition_index)
 
 
 def serve():
