@@ -34,7 +34,7 @@ COPY --from=build /srv/build/leader /bin/
 
 RUN echo $(ls /bin)
 
-EXPOSE 8080
+EXPOSE 8888
 EXPOSE 9000
 
 ENTRYPOINT ["/bin/leader", "serve"]

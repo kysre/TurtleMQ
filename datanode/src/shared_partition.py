@@ -2,12 +2,27 @@ import json
 import threading
 import time
 import os
+import shutil
 import random
 from protos import datanode_pb2
 from configs.utils import MessagesStatus, PartitionsBusyError, PartitionStatus
 from configs.configs import ConfigManager
 import threading
 from loguru import logger
+from configs.utils import hash_function
+
+
+def clear_path(path):
+    for filename in os.listdir(path):
+        file_path = os.path.join(path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+    pass
 
 
 class Message:
@@ -18,7 +33,6 @@ class Message:
         self.message_status = MessagesStatus.NOT_SENT
         self.file_address = file_address
         self.index = self.write_file_system(message.value)
-        logger.info(self.index)
 
     def get_message(self):
         line = None
@@ -26,21 +40,26 @@ class Message:
             for _ in range(self.index + 1):
                 line = file_system.readline()
         assert line is not None
+
         message = json.loads(line)
-        value = message['value']
-        return datanode_pb2.QueueMessage(key=self.key, value=[b.encode(Message.encoding_method) for b in value])
+
+        key, decoded_value = message['key'], message['value']
+
+        encoded_value = decoded_value.encode(Message.encoding_method)
+        messageProto = datanode_pb2.QueueMessage(key=key, value=encoded_value)
+        return messageProto
 
     def pend_message(self):
         self.message_status = MessagesStatus.PENDING
-        self.write_file_system([])
+        self.write_file_system(b'')
 
     def sent_message(self):
         self.message_status = MessagesStatus.SENT
-        self.write_file_system([])
+        self.write_file_system(b'')
 
     def set_message_free(self):
         self.message_status = MessagesStatus.NOT_SENT
-        self.write_file_system([])
+        self.write_file_system(b'')
 
     def write_file_system(self, value):
         count_lines = 0
@@ -49,7 +68,7 @@ class Message:
                 count_lines += 1
 
         with open(self.file_address, 'a') as file_system:
-            value = [b.decode(Message.encoding_method) for b in value]
+            value = value.decode(Message.encoding_method)
             file_system.write(json.dumps(dict(key=self.key, value=value, status=self.message_status.value)) + '\n')
 
         return count_lines
@@ -92,6 +111,9 @@ class Partition:
     def add_message(self, message: datanode_pb2.QueueMessage):
         self.messages.append(Message(message, self.dir))
 
+    def get_remaining_message_count(self) -> int:
+        return len(self.messages)
+
 
 class SharedPartitions:
     pull_timeout = int(ConfigManager.get_prop('pull_timeout'))
@@ -133,7 +155,10 @@ class SharedPartitions:
                     available_partitions.append(i)
             if len(available_partitions) == 0:
                 raise PartitionsBusyError('There is no available partitions!')
-            return random.choice(available_partitions)
+            for available_partition in available_partitions:
+                if len(self.partitions[available_partition].messages) > 0:
+                    return available_partition
+            raise PartitionsBusyError('There is no a free - non empty partition!')
 
     def push(self, message):
         partition_index = self.get_dest_partition(message.key)
@@ -147,7 +172,13 @@ class SharedPartitions:
             self.partitions[partition_index].remove_message()
 
     def get_dest_partition(self, key):
-        return 0
+        return hash_function(key, self.partition_count)
+
+    def get_remaining_messages_count(self) -> int:
+        remaining_count = 0
+        for partition in self.partitions:
+            remaining_count += partition.get_remaining_message_count()
+        return remaining_count
 
 
 def clean_partitions(shared_partition: SharedPartitions):
@@ -156,21 +187,21 @@ def clean_partitions(shared_partition: SharedPartitions):
     cleaner_period = int(ConfigManager.get_prop('cleaner_period'))
 
     while True:
-        for i, partition_status in enumerate(shared_partition.partitions_status):
-            partition = shared_partition.partitions[i]
+        with shared_partition.partition_lock:
+            for i, partition_status in enumerate(shared_partition.partitions_status):
+                partition = shared_partition.partitions[i]
 
-            # Do nothing if partition is already free
-            if partition_status == PartitionStatus.FREE:
-                continue
+                # Do nothing if partition is already free
+                if partition_status == PartitionStatus.FREE:
+                    continue
 
-            last_pull_status = partition.last_pull
+                last_pull_status = partition.last_pull
 
-            assert last_pull_status['time'] is not None
+                assert last_pull_status['time'] is not None
 
-            if time.time() - last_pull_status['time'] > pending_timeout:
-                with shared_partition.partition_lock:
+                if time.time() - last_pull_status['time'] > pending_timeout:
                     shared_partition.partitions_status[i] = PartitionStatus.FREE
-                last_pull_status['message'].set_message_free()
-                logger.info(f'Partition {i} is now free!')
+                    last_pull_status['message'].set_message_free()
+                    logger.info(f'Partition {i} is now free!')
 
         time.sleep(cleaner_period)

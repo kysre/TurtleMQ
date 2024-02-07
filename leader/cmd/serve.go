@@ -87,6 +87,7 @@ func getDataNodeDirectoryOrPanic(conf *Config) *models.DataNodeDirectory {
 		panic("DataNodeDirectory is nil")
 	}
 	go tasks.RunHealthChecks(directory, conf.Leader.DataNodeStateCheckPeriod)
+	go tasks.RunRemainingCheck(directory, conf.Leader.DataNodeRemainingCheckPeriod)
 	return directory
 }
 

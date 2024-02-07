@@ -1,11 +1,12 @@
 syntax = "proto3";
 
-// protoc -I. --go_out=plugins=grpc:$GOPATH/src ./api/queue/queue.proto
-// python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. ./client_py/queue.proto
+// protoc -I. --go_out=plugins=grpc:$GOPATH/src queue.proto
 
 package queue;
 
 import "google/protobuf/empty.proto";
+
+option go_package = "github.com/kysre/TurtleMQ/client_go/queue";
 
 message PushRequest {
   string key = 1;
@@ -17,7 +18,7 @@ message PullResponse {
   bytes value = 2;
 }
 
-message AcknowledgePullRequest{
+message AcknowledgePullRequest {
   string key = 1;
 }
 

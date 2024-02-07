@@ -21,7 +21,7 @@ class QueueClient:
             cls.stub = queue_pb2_grpc.QueueStub(channel)
         return cls.stub
 
-    def push(self, key: str, value: List[bytes]):
+    def push(self, key: str, value: bytes):
         try:
             stub = self.get_stub(self.HOST, self.PORT)
 
@@ -30,12 +30,12 @@ class QueueClient:
         except grpc.RpcError as e:
             print(f"Error in pushing: {e}.")
 
-    def pull(self):
+    def pull(self) -> (str, bytes):
         try:
             stub = self.get_stub(self.HOST, self.PORT)
             response = stub.Pull(f())
-            print(f"key and message: {response.key} - {response.value}")
-            return response
+            self.ack(response.key)
+            return response.key, response.value
         except grpc.RpcError as e:
             print(f"Error in pulling: {e}.")
 
@@ -43,8 +43,6 @@ class QueueClient:
         try:
             stub = self.get_stub(self.HOST, self.PORT)
             stub.AcknowledgePull(queue_pb2.AcknowledgePullRequest(key=acknowledgement))
-            # ack_request = queue_pb2.AcknowledgePullRequest(key=acknowledgement)
-            # stub.AcknowledgePull(ack_request)
             return None
         except grpc.RpcError as e:
             print(f"Error in acknowledgement: {e}")
@@ -54,7 +52,6 @@ class QueueClient:
         try:
             stub = self.get_stub(self.HOST, self.PORT)
             response = stub.Pull(f())
-            print(f"key and message: {response.key} - {response.value}")
             await self.non_blocking_ack(response.key)
             return response
         except grpc.RpcError as e:

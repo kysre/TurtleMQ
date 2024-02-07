@@ -1,4 +1,5 @@
 from enum import Enum
+import hashlib
 
 
 class PartitionStatus(Enum):
@@ -14,3 +15,12 @@ class MessagesStatus(Enum):
 
 class PartitionsBusyError(Exception):
     pass
+
+
+def hash_function(key: str, number_of_partitions: int) -> int:
+
+    result = hashlib.md5(key.encode())
+    hashed_bytes = result.digest()
+
+    return int.from_bytes(hashed_bytes, byteorder='big') % number_of_partitions
+

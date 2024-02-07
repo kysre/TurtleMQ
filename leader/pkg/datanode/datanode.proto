@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-// protoc -I. --go_out=plugins=grpc:$GOPATH/src ./api/datanode/datanode.proto
+// protoc -I. --go_out=plugins=grpc:$GOPATH/src ./datanode.proto
 // python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. ./api/datanode.proto
 
 package datanode;
@@ -11,7 +11,7 @@ option go_package = "github.com/kysre/TurtleMQ/leader/pkg/datanode";
 
 message QueueMessage {
   string key = 1;
-  repeated bytes value = 2;
+  bytes value = 2;
 }
 
 message PushRequest {
@@ -20,7 +20,7 @@ message PushRequest {
 }
 
 message PullResponse {
-  QueueMessage message = 2;
+  QueueMessage message = 1;
 }
 
 message AcknowledgePullRequest {
@@ -53,8 +53,8 @@ service DataNode {
   rpc Pull(google.protobuf.Empty) returns (PullResponse);
   rpc AcknowledgePull(AcknowledgePullRequest) returns (google.protobuf.Empty);
   // Data syncing Operation
-  rpc ReadPartition(ReadPartitionRequest) returns (stream ReadPartitionResponse);
-  rpc WritePartition(stream WritePartitionRequest) returns (google.protobuf.Empty);
+  rpc ReadPartition(ReadPartitionRequest) returns (ReadPartitionResponse);
+  rpc WritePartition(WritePartitionRequest) returns (google.protobuf.Empty);
   rpc PurgeReplicaData(google.protobuf.Empty) returns (google.protobuf.Empty);
   // Cluster consensus
   rpc IsHealthy(google.protobuf.Empty) returns (google.protobuf.Empty);
