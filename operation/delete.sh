@@ -3,8 +3,7 @@
 if [ "$EUID" -ne 0 ]; then 
     echo "Run as root."
 else
-    docker service rm turtle-mq
-    docker swarm leave --force
-
+    docker compose --file generated.docker-compose.yaml down
+    rm -f generated.docker-compose.yaml
     echo "Service deleted."
 fi
