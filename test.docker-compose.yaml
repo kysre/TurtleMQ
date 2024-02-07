@@ -1,0 +1,69 @@
+version: '3'
+services:
+  leader_0:
+    image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      - LEADER_LOGGING_LEVEL=info
+      - LEADER_DATANODEREMAININGCHECKPERIOD=2
+    ports:
+      - '8000:8888'
+
+  datanode_0:
+    image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      - leader_0
+    environment:
+      - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_NAME=datanode_0
+      - DATANODE_PORT=8000
+      - LEADER_HOST=leader_0
+      - LEADER_PORT=8888
+      - PULL_TIMEOUT=10
+      - PENDING_TIMEOUT=15
+      - CLEANER_PERIOD=3
+    volumes:
+      - datanode_0_vol:/var/lib/turtlemq/data/
+
+  datanode_1:
+    image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      - leader_0
+    environment:
+      - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_NAME=datanode_1
+      - DATANODE_PORT=8000
+      - LEADER_HOST=leader_0
+      - LEADER_PORT=8888
+      - PULL_TIMEOUT=10
+      - PENDING_TIMEOUT=15
+      - CLEANER_PERIOD=3
+    volumes:
+      - datanode_1_vol:/var/lib/turtlemq/data/
+
+  datanode_2:
+    image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      - leader_0
+    environment:
+      - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_NAME=datanode_2
+      - DATANODE_PORT=8000
+      - LEADER_HOST=leader_0
+      - LEADER_PORT=8888
+      - PULL_TIMEOUT=10
+      - PENDING_TIMEOUT=15
+      - CLEANER_PERIOD=3
+    volumes:
+      - datanode_2_vol:/var/lib/turtlemq/data/
+
+volumes:
+  datanode_0_vol:
+    driver: local
+  datanode_1_vol:
+    driver: local
+  datanode_2_vol:
+    driver: local
