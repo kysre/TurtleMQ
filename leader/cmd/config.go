@@ -28,6 +28,7 @@ type LeaderConfig struct {
 
 	DataNodeStateCheckPeriod     int
 	DataNodeRemainingCheckPeriod int
+	DataNodePartitionCount       int
 }
 
 type MetricConfig struct {
@@ -50,6 +51,7 @@ func LoadConfig(cmd *cobra.Command) (*Config, error) {
 	viper.SetDefault("leader.ReplicaHost", "localhost")
 	viper.SetDefault("leader.DataNodeStateCheckPeriod", 30)
 	viper.SetDefault("leader.DataNodeRemainingCheckPeriod", 2)
+	viper.SetDefault("leader.DataNodePartitionCount", 4)
 
 	viper.SetDefault("metric.ListenPort", 9000)
 
