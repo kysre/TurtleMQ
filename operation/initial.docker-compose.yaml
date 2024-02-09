@@ -1,0 +1,73 @@
+version: '3'
+services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - 9090:9090
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prom_data:/prometheus
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+      
+  leader_0:
+    image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      - LEADER_LOGGING_LEVEL=info
+    ports:
+      - '8000:8888'
+  
+  leader_1:
+    image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      - LEADER_LOGGING_LEVEL=info
+    ports:
+      - '8001:8888'
+
+  datanode_0:
+    image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_PORT=8000
+    deploy:
+      mode: replicated
+      replicas: ${DATANODE_REPLICA_COUNT}
+    volumes:
+      - datanode_vol_0:/var/lib/turtlemq/data/
+  
+  datanode_1:
+    image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
+    restart: unless-stopped
+    environment:
+      - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_PORT=8000
+    deploy:
+      mode: replicated
+      replicas: ${DATANODE_REPLICA_COUNT}
+    volumes:
+      - datanode_vol_1:/var/lib/turtlemq/data/
+
+volumes:
+  prom_data:
+    driver: local
+  datanode_vol_0:
+    driver: local
+  datanode_vol_1:
+    driver: local

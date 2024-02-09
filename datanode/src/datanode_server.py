@@ -18,6 +18,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
         self.shared_partition = SharedPartitions(partition_count, home_path=home_path + '/main/')
         self.replica = SharedPartitions(partition_count, home_path=home_path + '/replica/')
 
+
     def Push(self, request, context):
         logger.info(f"received a push message: {request.message}")
         if request.is_replica:
@@ -49,7 +50,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
                 for message in partition_messages:
                     push_to_partition(partition_index, self.shared_partition, message)
             return empty_pb2.Empty()
-        except grpc.RpcError as e:
+       except grpc.RpcError as e:
             logger.exception(e)
         except Exception as e:
             logger.exception(e)
