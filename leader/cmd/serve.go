@@ -46,8 +46,9 @@ func serve(cmd *cobra.Command, args []string) {
 
 	// Get shared resources
 	logger := getLoggerOrPanic(config)
-	directory := getDataNodeDirectoryOrPanic(config)
+	directory := getDataNodeDirectoryOrPanic()
 	balancer := getLoadBalancerOrPanic(logger, directory)
+	runDataNodesTasks(config, logger, directory, balancer)
 
 	// Get grpc server cores
 	queueCore := getQueueCore(logger, directory, balancer)
@@ -88,18 +89,26 @@ func getLoggerOrPanic(conf *Config) *logrus.Logger {
 	return logger
 }
 
-func getDataNodeDirectoryOrPanic(conf *Config) *models.DataNodeDirectory {
+func getDataNodeDirectoryOrPanic() *models.DataNodeDirectory {
 	directory := models.NewDataNodeDirectory()
 	if directory == nil {
 		panic("DataNodeDirectory is nil")
 	}
-	go tasks.RunHealthChecks(directory, conf.Leader.DataNodeStateCheckPeriod)
-	go tasks.RunRemainingCheck(directory, conf.Leader.DataNodeRemainingCheckPeriod)
 	return directory
 }
 
 func getLoadBalancerOrPanic(log *logrus.Logger, directory *models.DataNodeDirectory) loadbalancer.Balancer {
 	return loadbalancer.NewBalancer(log, directory)
+}
+
+func runDataNodesTasks(
+	conf *Config, log *logrus.Logger, directory *models.DataNodeDirectory, balancer loadbalancer.Balancer,
+) {
+	syncer := tasks.NewDataNodeSyncer(
+		log, directory, balancer, conf.Leader.DataNodePartitionCount, conf.Leader.DataNodeSyncTimeout)
+	healthChecker := tasks.NewDataNodeHealthChecker(directory, conf.Leader.DataNodeStateCheckPeriod, syncer)
+	go healthChecker.RunHealthChecks()
+	go tasks.RunRemainingCheck(directory, conf.Leader.DataNodeRemainingCheckPeriod)
 }
 
 func getQueueCore(

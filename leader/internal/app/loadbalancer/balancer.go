@@ -12,6 +12,7 @@ import (
 
 	"github.com/kysre/TurtleMQ/leader/internal/clients"
 	"github.com/kysre/TurtleMQ/leader/internal/models"
+	"github.com/kysre/TurtleMQ/leader/pkg/errors"
 )
 
 type Balancer interface {
@@ -19,6 +20,8 @@ type Balancer interface {
 	GetPushDataNodeAndReplicaClient(
 		ctx context.Context, token string) (clients.DataNodeClient, clients.DataNodeClient, error)
 	GetPullDataNodeClient(ctx context.Context) (clients.DataNodeClient, error)
+
+	GetPreviousAndAfterDataNodesForSync(addr string) (*models.DataNode, *models.DataNode, error)
 }
 
 type balancer struct {
@@ -50,29 +53,41 @@ func (b *balancer) GetPushDataNodeAndReplicaClient(
 	if err != nil {
 		return nil, nil, err
 	}
-	replicaIndex := b.getDataNodeReplicaIndex(index)
 	// Get datanode
 	dataNodeHash := b.datanodeHashSortedSlice[index]
-	dataNode, err := b.directory.GetDataNode(ctx, b.dataNodeHashMap[dataNodeHash])
-	if err != nil {
+	dataNode := b.directory.GetDataNode(b.dataNodeHashMap[dataNodeHash])
+	if dataNode.State == models.DataNodeStatePENDING {
 		return nil, nil, err
 	}
+	if dataNode.State == models.DataNodeStateUNHEALTHY {
+		index = index + 1
+		dataNodeHash = b.datanodeHashSortedSlice[index]
+		dataNode = b.directory.GetDataNode(b.dataNodeHashMap[dataNodeHash])
+	}
 	// Get datanode replica
+	replicaIndex := b.getDataNodeReplicaIndex(index)
 	dataNodeReplicaHash := b.datanodeHashSortedSlice[replicaIndex]
-	dataNodeReplica, err := b.directory.GetDataNode(ctx, b.dataNodeHashMap[dataNodeReplicaHash])
-	if err != nil {
+	dataNodeReplica := b.directory.GetDataNode(b.dataNodeHashMap[dataNodeReplicaHash])
+	if dataNodeReplica.State == models.DataNodeStatePENDING {
 		return nil, nil, err
+	}
+	if dataNodeReplica.State == models.DataNodeStateUNHEALTHY {
+		replicaIndex = replicaIndex + 1
+		dataNodeReplicaHash = b.datanodeHashSortedSlice[replicaIndex]
+		dataNodeReplica = b.directory.GetDataNode(b.dataNodeHashMap[dataNodeReplicaHash])
 	}
 	return dataNode.Client, dataNodeReplica.Client, nil
 }
+
+// TODO: Add randomness to loadbalancer for pull
 
 func (b *balancer) GetPullDataNodeClient(ctx context.Context) (clients.DataNodeClient, error) {
 	maxRemainingMsgHash := ""
 	maxRemainingMsgCount := 0
 	for i := 0; i < 2*len(b.datanodeHashSortedSlice); i++ {
 		dnHash := b.datanodeHashSortedSlice[i%len(b.datanodeHashSortedSlice)]
-		dn, _ := b.directory.GetDataNode(ctx, b.dataNodeHashMap[dnHash])
-		if dn == nil {
+		dn := b.directory.GetDataNode(b.dataNodeHashMap[dnHash])
+		if dn.State != models.DataNodeStateAVAILABLE {
 			continue
 		}
 		if dn.RemainingMsgCount > maxRemainingMsgCount {
@@ -80,10 +95,10 @@ func (b *balancer) GetPullDataNodeClient(ctx context.Context) (clients.DataNodeC
 			maxRemainingMsgCount = dn.RemainingMsgCount
 		}
 	}
-	dn, err := b.directory.GetDataNode(ctx, b.dataNodeHashMap[maxRemainingMsgHash])
-	if err != nil {
-		return nil, err
+	if maxRemainingMsgHash == "" {
+		return nil, errors.New("No AVAILABLE datanode!")
 	}
+	dn := b.directory.GetDataNode(b.dataNodeHashMap[maxRemainingMsgHash])
 	return dn.Client, nil
 }
 
@@ -145,7 +160,25 @@ func (b *balancer) getLessOrEqualIndexInHashCircle(hash string) (int, error) {
 	return index, nil
 }
 
-// Hash Ring implementation
+// Hash Ring implementation (Datanode[i]'s data is replicated in Datanode[i+1])
 func (b *balancer) getDataNodeReplicaIndex(i int) int {
 	return (i + 1) % len(b.datanodeHashSortedSlice)
+}
+
+func (b *balancer) GetPreviousAndAfterDataNodesForSync(addr string) (*models.DataNode, *models.DataNode, error) {
+	datanodeHash, err := b.getHash(addr)
+	if err != nil {
+		return nil, nil, err
+	}
+	index, err := b.getLessOrEqualIndexInHashCircle(datanodeHash)
+	if err != nil {
+		return nil, nil, err
+	}
+	prevIndex := (index - 1 + len(b.datanodeHashSortedSlice)) % len(b.datanodeHashSortedSlice)
+	prevDataNodeHash := b.datanodeHashSortedSlice[prevIndex]
+	afterIndex := (index + 1) % len(b.datanodeHashSortedSlice)
+	afterDataNodeHash := b.datanodeHashSortedSlice[afterIndex]
+	prevDataNode := b.directory.GetDataNode(b.dataNodeHashMap[prevDataNodeHash])
+	afterDataNode := b.directory.GetDataNode(b.dataNodeHashMap[afterDataNodeHash])
+	return prevDataNode, afterDataNode, nil
 }
