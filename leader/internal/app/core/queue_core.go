@@ -34,7 +34,8 @@ func (c *queueCore) Push(
 ) (*emptypb.Empty, error) {
 	// Collect metrics
 	startTime := time.Now()
-	defer c.collectMetrics("Push", startTime)
+	c.collectRpsMetrics("Push")
+	defer c.collectLatencyMetrics("Push", startTime)
 
 	key := request.GetKey()
 	client, err := c.balancer.GetPushDataNodeClient(ctx, key)
@@ -53,7 +54,8 @@ func (c *queueCore) Pull(
 ) (*queue.PullResponse, error) {
 	// Collect metrics
 	startTime := time.Now()
-	defer c.collectMetrics("Pull", startTime)
+	c.collectRpsMetrics("Pull")
+	defer c.collectLatencyMetrics("Pull", startTime)
 
 	c.logger.Info("Received Pull request")
 	client, err := c.balancer.GetPullDataNodeClient(ctx)
@@ -77,7 +79,8 @@ func (c *queueCore) AcknowledgePull(
 ) (*emptypb.Empty, error) {
 	// Collect metrics
 	startTime := time.Now()
-	defer c.collectMetrics("Ack", startTime)
+	c.collectRpsMetrics("Ack")
+	defer c.collectLatencyMetrics("Ack", startTime)
 
 	key := request.GetKey()
 	c.logger.Info(fmt.Sprintf("Received Ack Pull key=%s", key))
@@ -89,12 +92,15 @@ func (c *queueCore) AcknowledgePull(
 	return client.AcknowledgePull(ctx, &dataNodeReq)
 }
 
-func (c *queueCore) collectMetrics(methodName string, startTime time.Time) {
+func (c *queueCore) collectLatencyMetrics(methodName string, startTime time.Time) {
 	Latency.With(map[string]string{
 		"provider": "leader",
 		"method":   methodName,
 		"status":   "Done",
 	}).Observe(time.Since(startTime).Seconds())
+}
+
+func (c *queueCore) collectRpsMetrics(methodName string) {
 	Total.With(map[string]string{
 		"provider": "leader",
 		"method":   methodName,
