@@ -16,6 +16,7 @@ import (
 	"github.com/kysre/TurtleMQ/leader/internal/app/loadbalancer"
 	"github.com/kysre/TurtleMQ/leader/internal/models"
 	"github.com/kysre/TurtleMQ/leader/internal/pkg/grpcserver"
+	"github.com/kysre/TurtleMQ/leader/internal/pkg/metrics/prometheus"
 	"github.com/kysre/TurtleMQ/leader/pkg/leader"
 	"github.com/kysre/TurtleMQ/leader/pkg/queue"
 )
@@ -39,15 +40,21 @@ func serve(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
+	// Start metrics server
+	prometheusMetricServer := prometheus.StartMetricServerOrPanic(config.Metric.ListenPort)
+	defer prometheus.ShutDownMetricsServer(prometheusMetricServer)
+
+	// Get shared resources
 	logger := getLoggerOrPanic(config)
 	directory := getDataNodeDirectoryOrPanic(config)
 	balancer := getLoadBalancerOrPanic(logger, directory)
 
+	// Get grpc server cores
 	queueCore := getQueueCore(logger, directory, balancer)
 	leaderCore := getLeaderCore(logger, directory, balancer)
-
+	// Register grpc server
 	queueServer := getServerOrPanic(config, logger, queueCore, leaderCore)
-
+	// Serve
 	var serverWaitGroup sync.WaitGroup
 	serverWaitGroup.Add(1)
 	go func() {

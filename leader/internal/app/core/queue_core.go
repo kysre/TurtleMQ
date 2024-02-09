@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -31,6 +32,11 @@ func NewQueueCore(logger *logrus.Logger, directory *models.DataNodeDirectory, ba
 func (c *queueCore) Push(
 	ctx context.Context, request *queue.PushRequest,
 ) (*emptypb.Empty, error) {
+	// Collect metrics
+	startTime := time.Now()
+	c.collectRpsMetrics("Push")
+	defer c.collectLatencyMetrics("Push", startTime)
+
 	key := request.GetKey()
 	client, err := c.balancer.GetPushDataNodeClient(ctx, key)
 	c.logger.Info(fmt.Sprintf("Push key: %s to DataNode %v", key, client))
@@ -46,6 +52,11 @@ func (c *queueCore) Push(
 func (c *queueCore) Pull(
 	ctx context.Context, request *emptypb.Empty,
 ) (*queue.PullResponse, error) {
+	// Collect metrics
+	startTime := time.Now()
+	c.collectRpsMetrics("Pull")
+	defer c.collectLatencyMetrics("Pull", startTime)
+
 	c.logger.Info("Received Pull request")
 	client, err := c.balancer.GetPullDataNodeClient(ctx)
 	if err != nil {
@@ -66,6 +77,11 @@ func (c *queueCore) Pull(
 func (c *queueCore) AcknowledgePull(
 	ctx context.Context, request *queue.AcknowledgePullRequest,
 ) (*emptypb.Empty, error) {
+	// Collect metrics
+	startTime := time.Now()
+	c.collectRpsMetrics("Ack")
+	defer c.collectLatencyMetrics("Ack", startTime)
+
 	key := request.GetKey()
 	c.logger.Info(fmt.Sprintf("Received Ack Pull key=%s", key))
 	client, err := c.balancer.GetPushDataNodeClient(ctx, key)
@@ -74,4 +90,20 @@ func (c *queueCore) AcknowledgePull(
 	}
 	dataNodeReq := datanode.AcknowledgePullRequest{Key: key}
 	return client.AcknowledgePull(ctx, &dataNodeReq)
+}
+
+func (c *queueCore) collectLatencyMetrics(methodName string, startTime time.Time) {
+	Latency.With(map[string]string{
+		"provider": "leader",
+		"method":   methodName,
+		"status":   "Done",
+	}).Observe(time.Since(startTime).Seconds())
+}
+
+func (c *queueCore) collectRpsMetrics(methodName string) {
+	Total.With(map[string]string{
+		"provider": "leader",
+		"method":   methodName,
+		"status":   "Done",
+	}).Observe(1)
 }

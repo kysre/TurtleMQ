@@ -5,9 +5,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+
 	"github.com/kysre/TurtleMQ/leader/internal/pkg/metrics"
 	"github.com/kysre/TurtleMQ/leader/internal/pkg/metrics/prometheus"
-	"github.com/stretchr/testify/suite"
 )
 
 type HistogramTestSuite struct {
