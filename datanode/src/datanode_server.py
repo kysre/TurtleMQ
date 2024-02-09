@@ -13,8 +13,10 @@ from loguru import logger
 
 class DataNode(datanode_pb2_grpc.DataNodeServicer):
     def __init__(self, partition_count=1, home_path='datanode/server/'):
-        self.shared_partition = SharedPartitions(partition_count, home_path=home_path + 'main/')
-        self.replica = SharedPartitions(partition_count, home_path=home_path + 'replica/')
+        self.home_path = home_path
+        self.partition_count = partition_count
+        self.shared_partition = SharedPartitions(partition_count, home_path=home_path + '/main/')
+        self.replica = SharedPartitions(partition_count, home_path=home_path + '/replica/')
 
     def Push(self, request, context):
         logger.info(f"received a push message: {request.message}")
@@ -46,6 +48,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
             else:
                 for message in partition_messages:
                     push_to_partition(partition_index, self.shared_partition, message)
+            return empty_pb2.Empty()
         except grpc.RpcError as e:
             logger.exception(e)
         except Exception as e:
@@ -53,17 +56,34 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
 
     def ReadPartition(self, request, context):
         try:
-            pass
+            logger.info(f"received partition read message for partition: {request.partition_index}")
+            partition_index = request.partition_index
+            if request.is_replica:
+                return datanode_pb2.ReadPartitionResponse(
+                    partition_messages=self.replica.read_partition_non_blocking(partition_index))
+            else:
+                return datanode_pb2.ReadPartitionResponse(
+                    partition_messages=self.shared_partition.read_partition_non_blocking(partition_index))
         except grpc.RpcError as e:
             logger.exception(e)
         except Exception as e:
             logger.exception(e)
 
+    def PurgeReplicaData(self, request, context):
+        logger.info('received purge replica request.')
+        clear_path(f'{self.home_path}/replica')
+        self.replica = SharedPartitions(partition_count=self.partition_count,
+                                        home_path=self.home_path + '/replica/')
+        return empty_pb2.Empty()
+
     def AcknowledgePull(self, request, context):
         try:
             key = request.key
             logger.info(f"received an acknowledge message: {key}")
-            self.shared_partition.acknowledge(key)
+            if request.is_replica:
+                self.replica.acknowledge(key)
+            else:
+                self.shared_partition.acknowledge(key)
             return empty_pb2.Empty()
         except grpc.RpcError as e:
             logger.exception(f"Error in acknowledging. {e}")
@@ -114,7 +134,7 @@ def serve():
         add_request = leader_pb2.AddDataNodeRequest(address=f'{datanode_name}:{port}')
         stub.AddDataNode(add_request)
     except grpc.RpcError as e:
-        print(f"Error in notifying leader: {e}.")
+        logger.exception(f"Error in notifying leader: {e}.")
 
     server.wait_for_termination()
 

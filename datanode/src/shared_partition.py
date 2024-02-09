@@ -1,9 +1,7 @@
 import json
-import threading
 import time
 import os
 import shutil
-import random
 from protos import datanode_pb2
 from configs.utils import MessagesStatus, PartitionsBusyError, PartitionStatus
 from configs.configs import ConfigManager
@@ -21,8 +19,7 @@ def clear_path(path):
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
         except Exception as e:
-            print('Failed to delete %s. Reason: %s' % (file_path, e))
-    pass
+            logger.exception('Failed to delete %s. Reason: %s' % (file_path, e))
 
 
 class Message:
@@ -46,8 +43,9 @@ class Message:
         key, decoded_value = message['key'], message['value']
 
         encoded_value = decoded_value.encode(Message.encoding_method)
-        messageProto = datanode_pb2.QueueMessage(key=key, value=encoded_value)
-        return messageProto
+        message_proto = datanode_pb2.QueueMessage(key=key, value=encoded_value)
+
+        return message_proto
 
     def pend_message(self):
         self.message_status = MessagesStatus.PENDING
@@ -103,9 +101,17 @@ class Partition:
 
         return response.get_message()
 
-    def remove_message(self):
-        if len(self.messages) != 0:
-            message = self.messages.pop(0)
+    def message_generator(self):
+        for message in self.messages:
+            yield message.get_message()
+
+    def remove_message(self, key):
+        message = None
+        for message in self.messages:
+            if message.key == key:
+                break
+        if message is not None:
+            self.messages.remove(message)
             message.sent_message()
 
     def add_message(self, message: datanode_pb2.QueueMessage):
@@ -120,12 +126,13 @@ class SharedPartitions:
 
     def __init__(self, partition_count, home_path, cleaner=True):
         self.partition_lock = threading.Lock()
+        self.write_lock = threading.Lock()
 
         assert type(partition_count) is int
         self.partition_count = partition_count
 
         self.partitions_status = partition_count * [PartitionStatus.FREE]
-        self.partitions = [Partition(path=f'{home_path}/partition_{i + 1}.tmq') for i in range(partition_count)]
+        self.partitions = [Partition(path=f'{home_path}/partition_{i}.tmq') for i in range(partition_count)]
 
         if cleaner:
             self.cleaner = threading.Thread(target=clean_partitions, args=[self])
@@ -147,6 +154,10 @@ class SharedPartitions:
 
         return self.partitions[partition_index].get_messages()
 
+    def read_partition_non_blocking(self, partition_index):
+        partition = self.partitions[partition_index]
+        return partition.message_generator()
+
     def get_free_partition(self):
         with self.partition_lock:
             available_partitions = []
@@ -164,13 +175,15 @@ class SharedPartitions:
         if partition_index is None:
             partition_index = self.get_dest_partition(message.key)
         destination_partition = self.partitions[partition_index]
-        destination_partition.add_message(message)
+        # to avoid same index for multiple push request in messages
+        with self.write_lock:
+            destination_partition.add_message(message)
 
     def acknowledge(self, key):
         partition_index = self.get_dest_partition(key)
         with self.partition_lock:
+            self.partitions[partition_index].remove_message(key)
             self.partitions_status[partition_index] = PartitionStatus.FREE
-            self.partitions[partition_index].remove_message()
 
     def get_dest_partition(self, key):
         return hash_function(key, self.partition_count)
