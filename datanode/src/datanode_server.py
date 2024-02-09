@@ -50,7 +50,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
                 for message in partition_messages:
                     push_to_partition(partition_index, self.shared_partition, message)
             return empty_pb2.Empty()
-       except grpc.RpcError as e:
+        except grpc.RpcError as e:
             logger.exception(e)
         except Exception as e:
             logger.exception(e)
