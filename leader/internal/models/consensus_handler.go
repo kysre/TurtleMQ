@@ -36,7 +36,7 @@ func (l *LeaderConsensusHandler) AmIMaster() bool {
 }
 
 func (l *LeaderConsensusHandler) IsReplicaAvailable() bool {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	return l.replicaClient.IsHealthy(ctx)
 }
