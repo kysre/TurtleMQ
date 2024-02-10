@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -39,6 +40,7 @@ func NewDataNodeSyncer(
 
 // Data of datanode[i] is replicated in datanode[i+1]
 // After datanode[i] fails:
+//  - Remove datanode[i] from load balancer
 //  - Replica data of datanode[i+1] should be read -> push to datanode[i+1] data
 //  - Replica data of datanode[i+1] should be purged
 //  - Data of datanode[i-1] should be read -> write to datanode[i+1] replica data
@@ -58,6 +60,12 @@ func (s *DataNodeDataSyncer) SyncData(failedDataNode *models.DataNode) {
 	s.dataNodeDirectory.UpdateDataNodeState(prevDataNode.ID, models.DataNodeStatePENDING)
 	s.dataNodeDirectory.UpdateDataNodeState(afterDataNode.ID, models.DataNodeStatePENDING)
 	// Step 1
+	err = s.balancer.RemoveDataNodeFromHashCircle(failedDataNode.Address)
+	if err != nil {
+		logrus.Error(err)
+		os.Exit(-1)
+	}
+	// Step 2
 	for i := 0; i < s.partitionCount; i++ {
 		res, err := afterDataNode.Client.ReadPartition(
 			ctx, &datanode.ReadPartitionRequest{PartitionIndex: int32(i), IsReplica: true})
@@ -67,12 +75,12 @@ func (s *DataNodeDataSyncer) SyncData(failedDataNode *models.DataNode) {
 		}
 		go s.pushMessagesToDataNode(ctx, afterDataNode.Client, res.PartitionMessages)
 	}
-	// Step 2
+	// Step 3
 	err = afterDataNode.Client.PurgeReplicaData(ctx)
 	if err != nil {
 		s.logger.Error(err)
 	}
-	// Step 3
+	// Step 4
 	for i := 0; i < s.partitionCount; i++ {
 		res, err := prevDataNode.Client.ReadPartition(
 			ctx, &datanode.ReadPartitionRequest{PartitionIndex: int32(i), IsReplica: false})

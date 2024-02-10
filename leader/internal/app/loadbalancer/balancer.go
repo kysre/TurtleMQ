@@ -22,6 +22,7 @@ type Balancer interface {
 	GetPullDataNodeClient(ctx context.Context) (clients.DataNodeClient, error)
 
 	GetPreviousAndAfterDataNodesForSync(addr string) (*models.DataNode, *models.DataNode, error)
+	RemoveDataNodeFromHashCircle(addr string) error
 }
 
 type balancer struct {
@@ -145,6 +146,10 @@ func (b *balancer) insertInSlice(s []string, index int, value string) []string {
 	return s
 }
 
+func (b *balancer) removeFromSlice(s []string, index int) []string {
+	return append(s[:index], s[index+1:]...)
+}
+
 func (b *balancer) getLessOrEqualIndexInHashCircle(hash string) (int, error) {
 	index := 0
 	for i, sortedDnHash := range b.datanodeHashSortedSlice {
@@ -181,4 +186,18 @@ func (b *balancer) GetPreviousAndAfterDataNodesForSync(addr string) (*models.Dat
 	prevDataNode := b.directory.GetDataNode(b.dataNodeHashMap[prevDataNodeHash])
 	afterDataNode := b.directory.GetDataNode(b.dataNodeHashMap[afterDataNodeHash])
 	return prevDataNode, afterDataNode, nil
+}
+
+func (b *balancer) RemoveDataNodeFromHashCircle(addr string) error {
+	datanodeHash, err := b.getHash(addr)
+	if err != nil {
+		return err
+	}
+	index, err := b.getLessOrEqualIndexInHashCircle(datanodeHash)
+	if err != nil {
+		return err
+	}
+	b.datanodeHashSortedSlice = b.removeFromSlice(b.datanodeHashSortedSlice, index)
+	delete(b.dataNodeHashMap, datanodeHash)
+	return nil
 }
