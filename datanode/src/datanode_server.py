@@ -145,6 +145,7 @@ def push_to_partition(partition_index: int,
 
 def serve():
     start_http_server(9000)
+
     port = ConfigManager.get_prop('server_port')
     partitions_count = int(ConfigManager.get_prop('partition_count'))
     home_path = ConfigManager.get_prop('partition_home_path')
