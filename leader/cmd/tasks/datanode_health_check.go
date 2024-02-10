@@ -34,7 +34,7 @@ func (hc *DataNodeHealthChecker) RunHealthChecks() {
 	for {
 		select {
 		case <-ticker.C:
-			logrus.Info("Running DataNode health-check")
+			logrus.Debug("Running DataNode health-check")
 			hc.checkNodes()
 		}
 	}

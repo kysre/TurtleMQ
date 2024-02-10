@@ -12,6 +12,8 @@ import (
 	"github.com/kysre/TurtleMQ/client_go/queue"
 )
 
+const HOST = "localhost"
+
 type SubscribeFunction func(key string, value []byte)
 
 type QueueClient interface {
@@ -21,19 +23,29 @@ type QueueClient interface {
 }
 
 func GetQueueClient() QueueClient {
-	leaderAddr := "localhost:8000"
+	leaderAddr := fmt.Sprintf("%s:8000", HOST)
+	leaderReplicaAddr := fmt.Sprintf("%s:8001", HOST)
+
 	conn, err := grpc.Dial(leaderAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic("Can't connect to TurtleMQ cluster")
 	}
 	client := queue.NewQueueClient(conn)
+	repConn, err := grpc.Dial(leaderReplicaAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic("Can't connect to TurtleMQ cluster")
+	}
+	replicaClient := queue.NewQueueClient(repConn)
+
 	return &queueClient{
-		client: client,
+		client:        client,
+		replicaClient: replicaClient,
 	}
 }
 
 type queueClient struct {
-	client queue.QueueClient
+	client        queue.QueueClient
+	replicaClient queue.QueueClient
 }
 
 func (c *queueClient) Push(key string, value []byte) {
@@ -42,7 +54,7 @@ func (c *queueClient) Push(key string, value []byte) {
 	req.Value = append(req.Value, value...)
 	_, err := c.client.Push(ctx, &req)
 	if err != nil {
-		fmt.Print(err)
+		_, _ = c.replicaClient.Push(ctx, &req)
 	}
 }
 
@@ -50,8 +62,10 @@ func (c *queueClient) Pull() (string, []byte) {
 	ctx := context.Background()
 	res, err := c.client.Pull(ctx, &emptypb.Empty{})
 	if err != nil {
-		fmt.Print(err)
-		return "", nil
+		res, err = c.replicaClient.Pull(ctx, &emptypb.Empty{})
+		if err != nil {
+			return "", nil
+		}
 	}
 	defer c.acknowledgePull(ctx, res.GetKey())
 	return res.GetKey(), res.GetValue()
@@ -65,7 +79,7 @@ func (c *queueClient) acknowledgePull(ctx context.Context, key string) {
 	req := queue.AcknowledgePullRequest{Key: key}
 	_, err := c.client.AcknowledgePull(ctx, &req)
 	if err != nil {
-		fmt.Print(err)
+		_, _ = c.replicaClient.AcknowledgePull(ctx, &req)
 	}
 }
 
@@ -76,7 +90,7 @@ func (c *queueClient) runSubscribe(function SubscribeFunction) {
 		select {
 		case <-ticker.C:
 			key, value := c.Pull()
-			if value == nil {
+			if key == "" {
 				continue
 			}
 			function(key, value)

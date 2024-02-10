@@ -20,6 +20,7 @@ type DataNodeDataSyncer struct {
 	balancer          loadbalancer.Balancer
 	partitionCount    int
 	dataSyncTimeout   int
+	shouldSync        bool
 }
 
 func NewDataNodeSyncer(
@@ -28,6 +29,7 @@ func NewDataNodeSyncer(
 	balancer loadbalancer.Balancer,
 	partitionCount int,
 	dataSyncTimeout int,
+	shouldSync bool,
 ) *DataNodeDataSyncer {
 	return &DataNodeDataSyncer{
 		logger:            logger,
@@ -35,6 +37,7 @@ func NewDataNodeSyncer(
 		balancer:          balancer,
 		partitionCount:    partitionCount,
 		dataSyncTimeout:   dataSyncTimeout,
+		shouldSync:        shouldSync,
 	}
 }
 
@@ -46,7 +49,11 @@ func NewDataNodeSyncer(
 //  - Data of datanode[i-1] should be read -> write to datanode[i+1] replica data
 
 func (s *DataNodeDataSyncer) SyncData(failedDataNode *models.DataNode) {
-	s.logger.Info(fmt.Sprintf("Start datasync for datanode[%d]", failedDataNode.ID))
+	// Not sync data in leader's replica
+	if !s.shouldSync {
+		return
+	}
+	s.logger.Debug(fmt.Sprintf("Start datasync for datanode[%d]", failedDataNode.ID))
 	// Create context for requests
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(s.dataSyncTimeout)*time.Second)
 	defer cancel()
@@ -99,7 +106,7 @@ func (s *DataNodeDataSyncer) SyncData(failedDataNode *models.DataNode) {
 	s.dataNodeDirectory.UpdateDataNodeState(failedDataNode.ID, models.DataNodeStateUNHEALTHY)
 	s.dataNodeDirectory.UpdateDataNodeState(prevDataNode.ID, models.DataNodeStateAVAILABLE)
 	s.dataNodeDirectory.UpdateDataNodeState(afterDataNode.ID, models.DataNodeStateAVAILABLE)
-	s.logger.Info(fmt.Sprintf("Done datasync for datanode[%d]", failedDataNode.ID))
+	s.logger.Debug(fmt.Sprintf("Done datasync for datanode[%d]", failedDataNode.ID))
 }
 
 func (s *DataNodeDataSyncer) pushMessagesToDataNode(

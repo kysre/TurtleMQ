@@ -48,7 +48,9 @@ func serve(cmd *cobra.Command, args []string) {
 	logger := getLoggerOrPanic(config)
 	directory := getDataNodeDirectoryOrPanic()
 	balancer := getLoadBalancerOrPanic(logger, directory)
-	runDataNodesTasks(config, logger, directory, balancer)
+	consensusHandler := getConsensusOrPanic(config)
+
+	runTasks(config, logger, directory, balancer, consensusHandler)
 
 	// Get grpc server cores
 	queueCore := getQueueCore(logger, directory, balancer)
@@ -101,13 +103,27 @@ func getLoadBalancerOrPanic(log *logrus.Logger, directory *models.DataNodeDirect
 	return loadbalancer.NewBalancer(log, directory)
 }
 
-func runDataNodesTasks(
-	conf *Config, log *logrus.Logger, directory *models.DataNodeDirectory, balancer loadbalancer.Balancer,
+func getConsensusOrPanic(conf *Config) *models.LeaderConsensusHandler {
+	return models.NewLeaderConsensusHandler(conf.Leader.ReplicaHost)
+}
+
+func runTasks(
+	conf *Config,
+	log *logrus.Logger,
+	directory *models.DataNodeDirectory,
+	balancer loadbalancer.Balancer,
+	consensusHandler *models.LeaderConsensusHandler,
 ) {
+	// Init resources
 	syncer := tasks.NewDataNodeSyncer(
-		log, directory, balancer, conf.Leader.DataNodePartitionCount, conf.Leader.DataNodeSyncTimeout)
+		log, directory, balancer, conf.Leader.DataNodePartitionCount,
+		conf.Leader.DataNodeSyncTimeout, consensusHandler.AmIMaster(),
+	)
 	healthChecker := tasks.NewDataNodeHealthChecker(directory, conf.Leader.DataNodeStateCheckPeriod, syncer)
+	leaderSyncer := tasks.NewLeaderSyncer(log, consensusHandler, directory, conf.Leader.LeaderSyncPeriod)
+	// Run tasks
 	go healthChecker.RunHealthChecks()
+	go leaderSyncer.RunLeaderSync()
 	go tasks.RunRemainingCheck(directory, conf.Leader.DataNodeRemainingCheckPeriod)
 }
 
