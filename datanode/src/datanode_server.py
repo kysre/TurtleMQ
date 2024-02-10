@@ -11,6 +11,7 @@ from shared_partition import clear_path
 from loguru import logger
 
 from prometheus_client import Counter, Gauge, Summary, Histogram, generate_latest, REGISTRY, start_http_server
+import os
 
 disk_total_size = Gauge('disk_total_size', 'Total size of disk', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
 disk_used_size = Gauge('disk_used_size', 'Used size of disk', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
@@ -24,21 +25,38 @@ def inc_message_count(func):
     def wrapper(*args, **kwargs):
         func(*args, **kwargs)
         message_count.labels(provider=ConfigManager.get_prop('datanode_name')).inc()
-    return wrapper()
+    return wrapper
 
 
 def dec_message_count(func):
     def wrapper(*args, **kwargs):
         func(*args, **kwargs)
         message_count.labels(provider=ConfigManager.get_prop('datanode_name')).dec()
-    return wrapper()
+    return wrapper
 
 
 def set_message_count(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         message_count.labels(provider=ConfigManager.get_prop('datanode_name')).set(result)
-    return wrapper()
+    return wrapper
+
+
+def get_disk_info_decorator(func):
+    def wrapper():
+        total, used = func()
+        disk_total_size.labels(provider=ConfigManager.get_prop('datanode_name')).set(total)
+        disk_total_size.labels(provider=ConfigManager.get_prop('datanode_name')).set(total)
+    return wrapper
+
+
+@get_disk_info_decorator
+def get_disk_info():
+    path = ConfigManager.get_prop('partition_home_path')
+    st = os.statvfs(path)
+    total = st.f_blocks * st.f_frsize
+    used = (st.f_blocks - st.f_bfree) * st.f_frsize
+    return total, used
 
 
 class DataNode(datanode_pb2_grpc.DataNodeServicer):
