@@ -10,6 +10,36 @@ from shared_partition import SharedPartitions
 from shared_partition import clear_path
 from loguru import logger
 
+from prometheus_client import Counter, Gauge, Summary, Histogram, generate_latest, REGISTRY, start_http_server
+
+disk_total_size = Gauge('disk_total_size', 'Total size of disk', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
+disk_used_size = Gauge('disk_used_size', 'Used size of disk', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
+message_count = Gauge('message_count', 'Number of messages in datanode', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
+push_per_sec = Histogram('push_per_sec', 'Number of pushes in second', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
+pull_per_sec = Histogram('pull_per_sec', 'Number of pulls in second', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
+
+
+# DECORATORS{
+def inc_message_count(func):
+    def wrapper(*args, **kwargs):
+        func(*args, **kwargs)
+        message_count.labels(provider=ConfigManager.get_prop('datanode_name')).inc()
+    return wrapper()
+
+
+def dec_message_count(func):
+    def wrapper(*args, **kwargs):
+        func(*args, **kwargs)
+        message_count.labels(provider=ConfigManager.get_prop('datanode_name')).dec()
+    return wrapper()
+
+
+def set_message_count(func):
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        message_count.labels(provider=ConfigManager.get_prop('datanode_name')).set(result)
+    return wrapper()
+
 
 class DataNode(datanode_pb2_grpc.DataNodeServicer):
     def __init__(self, partition_count=1, home_path='datanode/server/'):
@@ -19,6 +49,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
         self.replica = SharedPartitions(partition_count, home_path=home_path + '/replica/')
 
 
+    @inc_message_count
     def Push(self, request, context):
         logger.info(f"received a push message: {request.message}")
         if request.is_replica:
@@ -77,6 +108,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
                                         home_path=self.home_path + '/replica/')
         return empty_pb2.Empty()
 
+    @dec_message_count
     def AcknowledgePull(self, request, context):
         try:
             key = request.key
@@ -95,6 +127,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
         except grpc.RpcError as e:
             logger.exception(f"Error in acknowledging. {e}")
 
+    @set_message_count
     def GetRemainingMessagesCount(self, request, context):
         try:
             count = self.shared_partition.get_remaining_messages_count()
@@ -111,6 +144,7 @@ def push_to_partition(partition_index: int,
 
 
 def serve():
+    start_http_server(9000)
     port = ConfigManager.get_prop('server_port')
     partitions_count = int(ConfigManager.get_prop('partition_count'))
     home_path = ConfigManager.get_prop('partition_home_path')
