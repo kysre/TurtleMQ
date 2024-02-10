@@ -20,6 +20,7 @@ class ConfigManager:
         leader_host=env_config('LEADER_HOST'),
         leader_port=env_config('LEADER_PORT'),
         datanode_name=env_config('DATANODE_NAME'),
+        grpc_workers=env_config('GRPC_WORKERS'),
     )
 
     @staticmethod
