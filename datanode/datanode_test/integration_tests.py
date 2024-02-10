@@ -26,6 +26,7 @@ def random_string():
 
 
 class TestQueueClient(TestCase):
+    
     def setUp(self):
         self.client = QueueClient()
         self.client.purge_main()
@@ -71,7 +72,8 @@ class TestQueueClient(TestCase):
         self.assertEqual(value, value_1)
 
     def test_concurrent_push_without_order(self):
-        for _ in range(100):
+
+      for _ in range(100):
 
             self.client.purge_main()
 
@@ -205,6 +207,7 @@ class TestQueueClient(TestCase):
         first_partition_messages = [(key, value)
                                     for key, value in zip(push_keys, push_values) if
                                     hash_function(key, 4) == 0]
+
 
         res = client.read_partition(partition_id=0, is_replica=True)
         res = [(r.key, r.value) for r in res]

@@ -53,11 +53,20 @@ func (c *queueClient) Pull() (string, []byte) {
 		fmt.Print(err)
 		return "", nil
 	}
+	defer c.acknowledgePull(ctx, res.GetKey())
 	return res.GetKey(), res.GetValue()
 }
 
 func (c *queueClient) Subscribe(function SubscribeFunction) {
 	go c.runSubscribe(function)
+}
+
+func (c *queueClient) acknowledgePull(ctx context.Context, key string) {
+	req := queue.AcknowledgePullRequest{Key: key}
+	_, err := c.client.AcknowledgePull(ctx, &req)
+	if err != nil {
+		fmt.Print(err)
+	}
 }
 
 func (c *queueClient) runSubscribe(function SubscribeFunction) {

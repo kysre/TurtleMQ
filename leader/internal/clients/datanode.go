@@ -14,11 +14,15 @@ import (
 type DataNodeClient interface {
 	IsHealthy(ctx context.Context) bool
 	GetRemainingMessagesCount(ctx context.Context) (int32, error)
+
 	Push(ctx context.Context, request *datanode.PushRequest) (*empty.Empty, error)
 	Pull(ctx context.Context, request *empty.Empty) (*datanode.PullResponse, error)
 	AcknowledgePull(ctx context.Context, request *datanode.AcknowledgePullRequest) (*empty.Empty, error)
-}
 
+	ReadPartition(ctx context.Context, request *datanode.ReadPartitionRequest) (*datanode.ReadPartitionResponse, error)
+	WritePartition(ctx context.Context, request *datanode.WritePartitionRequest) error
+	PurgeReplicaData(ctx context.Context) error
+}
 type dataNodeClient struct {
 	client datanode.DataNodeClient
 }
@@ -70,4 +74,26 @@ func (d *dataNodeClient) AcknowledgePull(
 		return nil, err
 	}
 	return res, nil
+}
+
+func (d *dataNodeClient) ReadPartition(
+	ctx context.Context, request *datanode.ReadPartitionRequest,
+) (*datanode.ReadPartitionResponse, error) {
+	res, err := d.client.ReadPartition(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (d *dataNodeClient) WritePartition(
+	ctx context.Context, request *datanode.WritePartitionRequest,
+) error {
+	_, err := d.client.WritePartition(ctx, request)
+	return err
+}
+
+func (d *dataNodeClient) PurgeReplicaData(ctx context.Context) error {
+	_, err := d.client.PurgeReplicaData(ctx, &emptypb.Empty{})
+	return err
 }

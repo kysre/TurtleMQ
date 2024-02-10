@@ -1,11 +1,38 @@
 version: '3'
 services:
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    restart: unless-stopped
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prom_data:/prometheus
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+      - GF_LOG_LEVEL=error
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+      - grafana_data:/var/lib/grafana
+
   leader_0:
     image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
     restart: unless-stopped
+    depends_on:
+      - prometheus
     environment:
       - LEADER_LOGGING_LEVEL=info
-      - LEADER_DATANODEREMAININGCHECKPERIOD=2
+      - LEADER_LEADER_DATANODEREMAININGCHECKPERIOD=2
+      - LEADER_LEADER_DATANODEPARTITIONCOUNT=100
     ports:
       - '8000:8888'
 
@@ -23,6 +50,7 @@ services:
       - PULL_TIMEOUT=10
       - PENDING_TIMEOUT=15
       - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
     volumes:
       - datanode_0_vol:/var/lib/turtlemq/data/
 
@@ -40,6 +68,7 @@ services:
       - PULL_TIMEOUT=10
       - PENDING_TIMEOUT=15
       - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
     volumes:
       - datanode_1_vol:/var/lib/turtlemq/data/
 
@@ -57,10 +86,15 @@ services:
       - PULL_TIMEOUT=10
       - PENDING_TIMEOUT=15
       - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
     volumes:
       - datanode_2_vol:/var/lib/turtlemq/data/
 
 volumes:
+  prom_data:
+    driver: local
+  grafana_data:
+    driver: local
   datanode_0_vol:
     driver: local
   datanode_1_vol:

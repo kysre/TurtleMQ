@@ -15,7 +15,10 @@ else
         echo "Value $1 is too big or too small."; return 1
     fi
 
-    docker service scale turtle-mq=$1
-
+    python3 operation/diff-update-compose.py $1
+    if [ ! $? -eq 0 ]; then
+        return 1
+    fi
+    docker compose --file generated.docker-compose.yaml up --remove-orphans -d
     echo "Service scaled to $1."
 fi

@@ -1,12 +1,24 @@
+import json
+import time
 from unittest import TestCase
 from client_py.client import QueueClient
 from concurrent import futures
 import asyncio
+import os
 
 
 def sample_push_pull(client: QueueClient):
     asyncio.run(client.push("test key", [b'test value']))
     return asyncio.run(client.pull()).value
+
+
+def store_key_value(key, value):
+    print(key, value)
+    print(os.path)
+    path = '/tmp/test/'
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(f'{path}/test.json', 'w') as file:
+        file.write(json.dumps(dict(key=key, value=value.decode())))
 
 
 class TestQueueClient(TestCase):
@@ -45,4 +57,17 @@ class TestQueueClient(TestCase):
         self.assertListEqual(res, [[b'test value'], [b'test value'], [b'test value']])
 
     def test_subscribe(self):
-        self.fail()
+        client_2 = QueueClient()
+        self.client.subscribe(f=store_key_value)
+
+        client_2.push("test key", b'test value')
+
+        time.sleep(5)
+
+        with open('/tmp/test/test.json') as file:
+            json_string = file.read()
+            json_dict = json.loads(json_string)
+
+            print(json_dict['key'])
+
+            self.assertEqual(json_dict['key'], 'test key')

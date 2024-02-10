@@ -1,8 +1,9 @@
 package prometheus
 
 import (
-	"github.com/kysre/TurtleMQ/leader/internal/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/kysre/TurtleMQ/leader/internal/pkg/metrics"
 )
 
 type histogram struct {

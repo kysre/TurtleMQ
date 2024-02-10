@@ -38,7 +38,7 @@ class DataNode(queue_pb2_grpc.QueueServicer):
 
 
 def serve():
-    port = "8888"
+    port = "8000"
     host = "localhost"
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
