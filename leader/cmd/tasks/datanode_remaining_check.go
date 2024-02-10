@@ -16,7 +16,7 @@ func RunRemainingCheck(dataNodeDirectory *models.DataNodeDirectory, remainingChe
 	for {
 		select {
 		case <-ticker.C:
-			logrus.Info("Running DataNode remaining-check")
+			logrus.Debug("Running DataNode remaining-check")
 			updateNodesRemaining(dataNodeDirectory)
 		}
 	}

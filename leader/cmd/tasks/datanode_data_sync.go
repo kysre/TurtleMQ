@@ -53,7 +53,7 @@ func (s *DataNodeDataSyncer) SyncData(failedDataNode *models.DataNode) {
 	if !s.shouldSync {
 		return
 	}
-	s.logger.Info(fmt.Sprintf("Start datasync for datanode[%d]", failedDataNode.ID))
+	s.logger.Debug(fmt.Sprintf("Start datasync for datanode[%d]", failedDataNode.ID))
 	// Create context for requests
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(s.dataSyncTimeout)*time.Second)
 	defer cancel()
@@ -106,7 +106,7 @@ func (s *DataNodeDataSyncer) SyncData(failedDataNode *models.DataNode) {
 	s.dataNodeDirectory.UpdateDataNodeState(failedDataNode.ID, models.DataNodeStateUNHEALTHY)
 	s.dataNodeDirectory.UpdateDataNodeState(prevDataNode.ID, models.DataNodeStateAVAILABLE)
 	s.dataNodeDirectory.UpdateDataNodeState(afterDataNode.ID, models.DataNodeStateAVAILABLE)
-	s.logger.Info(fmt.Sprintf("Done datasync for datanode[%d]", failedDataNode.ID))
+	s.logger.Debug(fmt.Sprintf("Done datasync for datanode[%d]", failedDataNode.ID))
 }
 
 func (s *DataNodeDataSyncer) pushMessagesToDataNode(

@@ -31,7 +31,7 @@ func NewLeaderSyncer(
 }
 
 func (ls *LeaderSyncer) RunLeaderSync() {
-	ls.logger.Info("Running leader sync")
+	ls.logger.Debug("Running leader sync")
 	tickerPeriod := time.Duration(ls.period) * time.Second
 	ticker := time.NewTicker(tickerPeriod)
 	for {
