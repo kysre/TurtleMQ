@@ -59,3 +59,14 @@ func (d *DataNodeDirectory) GetDataNodeCount() int {
 	defer d.MX.Unlock()
 	return len(d.DataNodes)
 }
+
+func (d *DataNodeDirectory) DoesDataNodeExist(addr string) bool {
+	d.MX.Lock()
+	defer d.MX.Unlock()
+	for _, node := range d.DataNodes {
+		if node.Address == addr {
+			return true
+		}
+	}
+	return false
+}
