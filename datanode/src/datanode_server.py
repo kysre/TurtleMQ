@@ -120,7 +120,7 @@ def serve():
 
     datanode_name = ConfigManager.get_prop('datanode_name')
 
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=50))
     datanode_pb2_grpc.add_DataNodeServicer_to_server(DataNode(partitions_count, home_path), server)
 
     server.add_insecure_port('[::]:' + port)

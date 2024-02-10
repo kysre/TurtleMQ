@@ -31,7 +31,8 @@ services:
       - prometheus
     environment:
       - LEADER_LOGGING_LEVEL=info
-      - LEADER_DATANODEREMAININGCHECKPERIOD=2
+      - LEADER_LEADER_DATANODEREMAININGCHECKPERIOD=2
+      - LEADER_LEADER_DATANODEPARTITIONCOUNT=100
     ports:
       - '8000:8888'
 
@@ -49,6 +50,7 @@ services:
       - PULL_TIMEOUT=10
       - PENDING_TIMEOUT=15
       - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
     volumes:
       - datanode_0_vol:/var/lib/turtlemq/data/
 
@@ -66,6 +68,7 @@ services:
       - PULL_TIMEOUT=10
       - PENDING_TIMEOUT=15
       - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
     volumes:
       - datanode_1_vol:/var/lib/turtlemq/data/
 
@@ -83,6 +86,7 @@ services:
       - PULL_TIMEOUT=10
       - PENDING_TIMEOUT=15
       - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
     volumes:
       - datanode_2_vol:/var/lib/turtlemq/data/
 

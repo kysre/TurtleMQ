@@ -21,7 +21,9 @@ type queueCore struct {
 	balancer loadbalancer.Balancer
 }
 
-func NewQueueCore(logger *logrus.Logger, directory *models.DataNodeDirectory, balancer loadbalancer.Balancer) queue.QueueServer {
+func NewQueueCore(
+	logger *logrus.Logger, directory *models.DataNodeDirectory, balancer loadbalancer.Balancer,
+) queue.QueueServer {
 	return &queueCore{
 		logger:    logger,
 		directory: directory,
@@ -37,16 +39,32 @@ func (c *queueCore) Push(
 	c.collectRpsMetrics("Push")
 	defer c.collectLatencyMetrics("Push", startTime)
 
+	// Get datanode & it's replica client
 	key := request.GetKey()
-	client, err := c.balancer.GetPushDataNodeClient(ctx, key)
-	c.logger.Info(fmt.Sprintf("Push key: %s to DataNode %v", key, client))
+	dataNodeClient, dataNodeReplicaClient, err := c.balancer.GetPushDataNodeAndReplicaClient(ctx, key)
 	if err != nil {
+		c.logger.Error(err)
 		return nil, err
 	}
+	c.logger.Info(fmt.Sprintf("Push key: %s to DataNode %v", key, dataNodeClient))
+	c.logger.Info(fmt.Sprintf("Push key: %s to DataNodeReplica %v", key, dataNodeReplicaClient))
+	// Create grpc requests
 	messagePb := datanode.QueueMessage{Key: key}
 	messagePb.Value = append(messagePb.Value, request.GetValue()...)
-	dataNodeReq := datanode.PushRequest{Message: &messagePb}
-	return client.Push(ctx, &dataNodeReq)
+	dataNodeReq := datanode.PushRequest{Message: &messagePb, IsReplica: false}
+	dataNodeReplicaReq := datanode.PushRequest{Message: &messagePb, IsReplica: true}
+	// Send grpc requests
+	_, err = dataNodeClient.Push(ctx, &dataNodeReq)
+	if err != nil {
+		c.logger.Error(err)
+		return nil, err
+	}
+	_, err = dataNodeReplicaClient.Push(ctx, &dataNodeReplicaReq)
+	if err != nil {
+		c.logger.Error(err)
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func (c *queueCore) Pull(
@@ -58,15 +76,20 @@ func (c *queueCore) Pull(
 	defer c.collectLatencyMetrics("Pull", startTime)
 
 	c.logger.Info("Received Pull request")
+	// Get datanode
 	client, err := c.balancer.GetPullDataNodeClient(ctx)
 	if err != nil {
+		c.logger.Error(err)
 		return nil, err
 	}
 	c.logger.Info(fmt.Sprintf("Pull req datanode client: %v", client))
+	// Get pull response
 	dataNodeRes, err := client.Pull(ctx, request)
 	if err != nil {
+		c.logger.Error(err)
 		return nil, err
 	}
+	// Return response in correct format
 	message := dataNodeRes.GetMessage()
 	c.logger.Info(fmt.Sprintf("Pull response with key: %s", message.GetKey()))
 	response := queue.PullResponse{Key: message.GetKey()}
@@ -84,12 +107,28 @@ func (c *queueCore) AcknowledgePull(
 
 	key := request.GetKey()
 	c.logger.Info(fmt.Sprintf("Received Ack Pull key=%s", key))
-	client, err := c.balancer.GetPushDataNodeClient(ctx, key)
+	// Get datanode & it's replica client
+	dataNodeClient, dataNodeReplicaClient, err := c.balancer.GetPushDataNodeAndReplicaClient(ctx, key)
 	if err != nil {
+		c.logger.Error(err)
 		return nil, err
 	}
-	dataNodeReq := datanode.AcknowledgePullRequest{Key: key}
-	return client.AcknowledgePull(ctx, &dataNodeReq)
+	c.logger.Info(fmt.Sprintf("Ack key: %s to DataNode %v", key, dataNodeClient))
+	c.logger.Info(fmt.Sprintf("Ack key: %s to DataNodeReplica %v", key, dataNodeReplicaClient))
+	// Create requests & send Ack to datanode & it's replica
+	dataNodeReq := datanode.AcknowledgePullRequest{Key: key, IsReplica: false}
+	dataNodeReplicaReq := datanode.AcknowledgePullRequest{Key: key, IsReplica: true}
+	_, err = dataNodeClient.AcknowledgePull(ctx, &dataNodeReq)
+	if err != nil {
+		c.logger.Error(err)
+		return nil, err
+	}
+	_, err = dataNodeClient.AcknowledgePull(ctx, &dataNodeReplicaReq)
+	if err != nil {
+		c.logger.Error(err)
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func (c *queueCore) collectLatencyMetrics(methodName string, startTime time.Time) {
