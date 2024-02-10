@@ -20,6 +20,7 @@ type DataNodeDataSyncer struct {
 	balancer          loadbalancer.Balancer
 	partitionCount    int
 	dataSyncTimeout   int
+	shouldSync        bool
 }
 
 func NewDataNodeSyncer(
@@ -28,6 +29,7 @@ func NewDataNodeSyncer(
 	balancer loadbalancer.Balancer,
 	partitionCount int,
 	dataSyncTimeout int,
+	shouldSync bool,
 ) *DataNodeDataSyncer {
 	return &DataNodeDataSyncer{
 		logger:            logger,
@@ -35,6 +37,7 @@ func NewDataNodeSyncer(
 		balancer:          balancer,
 		partitionCount:    partitionCount,
 		dataSyncTimeout:   dataSyncTimeout,
+		shouldSync:        shouldSync,
 	}
 }
 
@@ -46,6 +49,10 @@ func NewDataNodeSyncer(
 //  - Data of datanode[i-1] should be read -> write to datanode[i+1] replica data
 
 func (s *DataNodeDataSyncer) SyncData(failedDataNode *models.DataNode) {
+	// Not sync data in leader's replica
+	if !s.shouldSync {
+		return
+	}
 	s.logger.Info(fmt.Sprintf("Start datasync for datanode[%d]", failedDataNode.ID))
 	// Create context for requests
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(s.dataSyncTimeout)*time.Second)
