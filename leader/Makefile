@@ -26,7 +26,7 @@ clean: ## to remove generated files
 	-rm -rf postviewd
 	-find . -type d -name mocks -exec rm -rf \{} +
 
-leader: $(SRCS) $(PBS) | generate ## Compile leader daemon
+leader:
 	go build -o $@ leader ./cmd/$@
 
 docker: ## to build docker image
