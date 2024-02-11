@@ -16,7 +16,7 @@ func RunRemainingCheck(dataNodeDirectory *models.DataNodeDirectory, remainingChe
 	for {
 		select {
 		case <-ticker.C:
-			logrus.Info("Running DataNode remaining-check")
+			logrus.Debug("Running DataNode remaining-check")
 			updateNodesRemaining(dataNodeDirectory)
 		}
 	}
@@ -25,7 +25,7 @@ func RunRemainingCheck(dataNodeDirectory *models.DataNodeDirectory, remainingChe
 func updateNodesRemaining(dataNodeDirectory *models.DataNodeDirectory) {
 	dataNodes := dataNodeDirectory.DataNodes
 	for _, node := range dataNodes {
-		if node.State != models.DataNodeStateUNHEALTHY {
+		if node.State == models.DataNodeStateAVAILABLE {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 			count, err := node.Client.GetRemainingMessagesCount(ctx)
 			if err != nil {

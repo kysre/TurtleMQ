@@ -37,8 +37,12 @@ func (lc *leaderCore) IsHealthy(ctx context.Context, request *empty.Empty) (*emp
 
 func (lc *leaderCore) AddDataNode(ctx context.Context, request *leader.AddDataNodeRequest) (*empty.Empty, error) {
 	address := request.GetAddress()
+	if lc.directory.DoesDataNodeExist(address) {
+		return &emptypb.Empty{}, nil
+	}
 	client, err := clients.NewDataNodeClient(address)
 	if err != nil {
+		lc.logger.Error(err)
 		return nil, err
 	}
 	dataNode := models.DataNode{
@@ -50,10 +54,12 @@ func (lc *leaderCore) AddDataNode(ctx context.Context, request *leader.AddDataNo
 	}
 	err = lc.directory.AddDataNode(&dataNode)
 	if err != nil {
+		lc.logger.Error(err)
 		return nil, err
 	}
 	err = lc.balancer.AddDataNodeToHashCircle(&dataNode)
 	if err != nil {
+		lc.logger.Error(err)
 		return nil, err
 	}
 	lc.logger.Info(fmt.Sprintf("Added DataNode %v", dataNode))

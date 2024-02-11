@@ -17,8 +17,9 @@ scrape_configs:
   metrics_path: /metrics
   scheme: http
   static_configs:
-  - targets:
-    - leader_0:9000
-    - leader_1:9000
-    - datanode_0:9000
-    - datanode_1:9000
+  - targets: ['leader_0:9000']
+  - targets: ['leader_1:9000']
+  - targets: ['datanode_0:9000']
+  - targets: ['datanode_1:9000']
+  - targets: ['datanode_2:9000']
+  - targets: ['datanode_3:9000']

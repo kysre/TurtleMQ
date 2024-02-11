@@ -16,6 +16,7 @@ import (
 	"github.com/kysre/TurtleMQ/leader/internal/app/loadbalancer"
 	"github.com/kysre/TurtleMQ/leader/internal/models"
 	"github.com/kysre/TurtleMQ/leader/internal/pkg/grpcserver"
+	"github.com/kysre/TurtleMQ/leader/internal/pkg/metrics/prometheus"
 	"github.com/kysre/TurtleMQ/leader/pkg/leader"
 	"github.com/kysre/TurtleMQ/leader/pkg/queue"
 )
@@ -39,15 +40,24 @@ func serve(cmd *cobra.Command, args []string) {
 		panic(err)
 	}
 
-	logger := getLoggerOrPanic(config)
-	directory := getDataNodeDirectoryOrPanic(config)
-	balancer := getLoadBalancerOrPanic(logger, directory)
+	// Start metrics server
+	prometheusMetricServer := prometheus.StartMetricServerOrPanic(config.Metric.ListenPort)
+	defer prometheus.ShutDownMetricsServer(prometheusMetricServer)
 
+	// Get shared resources
+	logger := getLoggerOrPanic(config)
+	directory := getDataNodeDirectoryOrPanic()
+	balancer := getLoadBalancerOrPanic(logger, directory)
+	consensusHandler := getConsensusOrPanic(config)
+
+	runTasks(config, logger, directory, balancer, consensusHandler)
+
+	// Get grpc server cores
 	queueCore := getQueueCore(logger, directory, balancer)
 	leaderCore := getLeaderCore(logger, directory, balancer)
-
+	// Register grpc server
 	queueServer := getServerOrPanic(config, logger, queueCore, leaderCore)
-
+	// Serve
 	var serverWaitGroup sync.WaitGroup
 	serverWaitGroup.Add(1)
 	go func() {
@@ -81,18 +91,40 @@ func getLoggerOrPanic(conf *Config) *logrus.Logger {
 	return logger
 }
 
-func getDataNodeDirectoryOrPanic(conf *Config) *models.DataNodeDirectory {
+func getDataNodeDirectoryOrPanic() *models.DataNodeDirectory {
 	directory := models.NewDataNodeDirectory()
 	if directory == nil {
 		panic("DataNodeDirectory is nil")
 	}
-	go tasks.RunHealthChecks(directory, conf.Leader.DataNodeStateCheckPeriod)
-	go tasks.RunRemainingCheck(directory, conf.Leader.DataNodeRemainingCheckPeriod)
 	return directory
 }
 
 func getLoadBalancerOrPanic(log *logrus.Logger, directory *models.DataNodeDirectory) loadbalancer.Balancer {
 	return loadbalancer.NewBalancer(log, directory)
+}
+
+func getConsensusOrPanic(conf *Config) *models.LeaderConsensusHandler {
+	return models.NewLeaderConsensusHandler(conf.Leader.ReplicaHost)
+}
+
+func runTasks(
+	conf *Config,
+	log *logrus.Logger,
+	directory *models.DataNodeDirectory,
+	balancer loadbalancer.Balancer,
+	consensusHandler *models.LeaderConsensusHandler,
+) {
+	// Init resources
+	syncer := tasks.NewDataNodeSyncer(
+		log, directory, balancer, conf.Leader.DataNodePartitionCount,
+		conf.Leader.DataNodeSyncTimeout, consensusHandler.AmIMaster(),
+	)
+	healthChecker := tasks.NewDataNodeHealthChecker(directory, conf.Leader.DataNodeStateCheckPeriod, syncer)
+	leaderSyncer := tasks.NewLeaderSyncer(log, consensusHandler, directory, conf.Leader.LeaderSyncPeriod)
+	// Run tasks
+	go healthChecker.RunHealthChecks()
+	go leaderSyncer.RunLeaderSync()
+	go tasks.RunRemainingCheck(directory, conf.Leader.DataNodeRemainingCheckPeriod)
 }
 
 func getQueueCore(
