@@ -49,15 +49,13 @@ def set_message_count(func):
     return wrapper
 
 
-def get_disk_info_decorator(func):
-    def wrapper(*args, **kwargs):
-        path = ConfigManager.get_prop('partition_home_path')
-        st = os.statvfs(path)
-        total = st.f_blocks * st.f_frsize
-        used = (st.f_blocks - st.f_bfree) * st.f_frsize
-        disk_total_size.set(total)
-        disk_total_size.set(used)
-    return wrapper
+def submit_disk_metrics():
+    path = ConfigManager.get_prop('partition_home_path')
+    st = os.statvfs(path)
+    total = st.f_blocks * st.f_frsize
+    used = (st.f_blocks - st.f_bfree) * st.f_frsize
+    disk_total_size.set(total)
+    disk_total_size.set(used)
 
 
 class DataNode(datanode_pb2_grpc.DataNodeServicer):
@@ -158,9 +156,9 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
         except grpc.RpcError as e:
             logger.exception(f"Error in acknowledging. {e}")
 
-    @get_disk_info_decorator
     @set_message_count
     def GetRemainingMessagesCount(self, request, context):
+        submit_disk_metrics()
         try:
             count = self.shared_partition.get_remaining_messages_count()
             res = datanode_pb2.GetRemainingMessagesCountResponse(remaining_messages_count=count)
