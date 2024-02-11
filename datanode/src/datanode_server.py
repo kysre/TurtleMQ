@@ -13,6 +13,7 @@ from loguru import logger
 from prometheus_client import Counter, Gauge, Summary, Histogram, generate_latest, REGISTRY, start_http_server
 import os
 import time
+from threading import Thread
 
 DISK_TOTAL_SIZE = Gauge('disk_total_size', 'Total size of disk', labelnames=["provider"])
 DISK_USED_SIZE = Gauge('disk_used_size', 'Used size of disk', labelnames=["provider"])
@@ -176,6 +177,20 @@ def push_to_partition(partition_index: int,
     shared_partition.push(partition_message, partition_index)
 
 
+def notify_leader_task():
+    datanode_name, port = ConfigManager.get_prop('datanode_name'), ConfigManager.get_prop('server_port')
+    leader_host, leader_port = ConfigManager.get_prop('leader_host'), ConfigManager.get_prop('leader_port')
+    while True:
+        try:
+            channel = grpc.insecure_channel(f"{leader_host}:{leader_port}")
+            stub = leader_pb2_grpc.LeaderStub(channel)
+            add_request = leader_pb2.AddDataNodeRequest(address=f'{datanode_name}:{port}')
+            stub.AddDataNode(add_request)
+        except grpc.RpcError as e:
+            logger.exception(f"Error in notifying leader: {e}.")
+        time.sleep(5)
+
+
 def serve():
     # Start metrics server
     start_http_server(9000)
@@ -198,14 +213,8 @@ def serve():
     logger.info('Server started, listening on ' + port)
 
     # notify leader
-    try:
-        leader_host, leader_port = ConfigManager.get_prop('leader_host'), ConfigManager.get_prop('leader_port')
-        channel = grpc.insecure_channel(f"{leader_host}:{leader_port}")
-        stub = leader_pb2_grpc.LeaderStub(channel)
-        add_request = leader_pb2.AddDataNodeRequest(address=f'{datanode_name}:{port}')
-        stub.AddDataNode(add_request)
-    except grpc.RpcError as e:
-        logger.exception(f"Error in notifying leader: {e}.")
+    notify_leader_task_thread = Thread(target=notify_leader_task)
+    notify_leader_task_thread.start()
 
     server.wait_for_termination()
 
