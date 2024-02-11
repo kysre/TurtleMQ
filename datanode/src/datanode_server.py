@@ -19,6 +19,7 @@ disk_used_size = Gauge('disk_used_size', 'Used size of disk', labelnames=["provi
 message_count = Gauge('message_count', 'Number of messages in datanode', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
 push_per_sec = Histogram('push_per_sec', 'Number of pushes in second', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
 pull_per_sec = Histogram('pull_per_sec', 'Number of pulls in second', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
+throughput = Histogram('disk_total_size', 'Total size of disk', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
 
 
 # DECORATORS{
@@ -70,6 +71,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
 
     @inc_message_count
     def Push(self, request, context):
+        throughput.observe(1)
         start_time = time.time()
         logger.info(f"received a push message: {request.message}")
         if request.is_replica:
@@ -82,6 +84,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
 
     def Pull(self, request, context):
         try:
+            throughput.observe(1)
             start_time = time.time()
             logger.info(f"received a pull message: {request}")
             message = self.shared_partition.pull()
@@ -136,6 +139,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
     @dec_message_count
     def AcknowledgePull(self, request, context):
         try:
+            throughput.observe(1)
             key = request.key
             logger.info(f"received an acknowledge message: {key}")
             if request.is_replica:
