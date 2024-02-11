@@ -1,7 +1,7 @@
 name: deploy
 
 on:
-  push
+  workflow_dispatch
 
 jobs:
   deploy:
@@ -18,6 +18,6 @@ jobs:
             cd /usr/src/app/TurtleMQ
             docker pull kysre/turtlemq:datanode-latest
             docker pull kysre/turtlemq:leader-latest
-            docker compose -f test.docker-compose.yaml down
+            docker compose -f docker-compose.yaml down
             git pull
-            docker compose -f test.docker-compose.yaml up -d
+            docker compose -f docker-compose.yaml up -d
