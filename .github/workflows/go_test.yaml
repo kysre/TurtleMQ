@@ -1,9 +1,9 @@
-name: go-test
+name: Test
 on: [push]
-jobs:
 
-  test:
-    name: Go Test
+jobs:
+  Go:
+    name: Leader Test
     runs-on: ubuntu-latest
     steps:
 
