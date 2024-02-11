@@ -12,6 +12,7 @@ from loguru import logger
 
 from prometheus_client import Counter, Gauge, Summary, Histogram, generate_latest, REGISTRY, start_http_server
 import os
+import time
 
 disk_total_size = Gauge('disk_total_size', 'Total size of disk', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
 disk_used_size = Gauge('disk_used_size', 'Used size of disk', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
@@ -69,18 +70,24 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
 
     @inc_message_count
     def Push(self, request, context):
+        start_time = time.time()
         logger.info(f"received a push message: {request.message}")
         if request.is_replica:
             self.replica.push(request.message)
         else:
             self.shared_partition.push(request.message)
+        end_time = time.time()
+        push_per_sec.observe(end_time - start_time)
         return empty_pb2.Empty()
 
     def Pull(self, request, context):
         try:
+            start_time = time.time()
             logger.info(f"received a pull message: {request}")
             message = self.shared_partition.pull()
             response = datanode_pb2.PullResponse(message=message)
+            end_time = time.time()
+            push_per_sec.observe(end_time - start_time)
             return response
         except grpc.RpcError as e:
             logger.exception(e)
