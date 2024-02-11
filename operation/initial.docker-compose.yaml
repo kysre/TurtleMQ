@@ -5,69 +5,199 @@ services:
     container_name: prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - 9090:9090
     restart: unless-stopped
     volumes:
       - ./prometheus:/etc/prometheus
       - prom_data:/prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 300M
+
+  node_exporter:
+    image: prom/node-exporter:latest
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 100M
 
   grafana:
     image: grafana/grafana
     container_name: grafana
     ports:
-      - 3000:3000
+      - '3000:3000'
     restart: unless-stopped
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=grafana
+      - GF_LOG_LEVEL=error
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=smtp.gmail.com:587
+      - GF_SMTP_USER=team17alert@gmail.com
+      - GF_SMTP_PASSWORD=rwtvawmdlscqrteb
+      - GF_SMTP_FROM_ADDRESS=team17alert@gmail.com
     volumes:
       - ./grafana:/etc/grafana/provisioning/datasources
-      
+      - grafana_data:/var/lib/grafana
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 400M
+
   leader_0:
     image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
     restart: unless-stopped
+    depends_on:
+      - prometheus
     environment:
       - LEADER_LOGGING_LEVEL=info
+      - LEADER_LEADER_DATANODEREMAININGCHECKPERIOD=2
+      - LEADER_LEADER_DATANODEPARTITIONCOUNT=100
+      - LEADER_LEADER_REPLICAHOST=leader_1
     ports:
       - '8000:8888'
-  
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
+
   leader_1:
     image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
     restart: unless-stopped
+    depends_on:
+      - prometheus
+      - leader_0
     environment:
       - LEADER_LOGGING_LEVEL=info
+      - LEADER_LEADER_DATANODEREMAININGCHECKPERIOD=2
+      - LEADER_LEADER_DATANODEPARTITIONCOUNT=100
+      - LEADER_LEADER_REPLICAHOST=leader_0
     ports:
       - '8001:8888'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
 
   datanode_0:
     image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
     restart: unless-stopped
+    depends_on:
+      - leader_0
+      - leader_1
     environment:
       - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_NAME=datanode_0
       - DATANODE_PORT=8000
-    deploy:
-      mode: replicated
-      replicas: ${DATANODE_REPLICA_COUNT}
+      - LEADER_HOST=leader_0
+      - LEADER_PORT=8888
+      - PULL_TIMEOUT=10
+      - PENDING_TIMEOUT=15
+      - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
     volumes:
-      - datanode_vol_0:/var/lib/turtlemq/data/
-  
+      - datanode_0_vol:/var/lib/turtlemq/data/
+    deploy:
+      resources:
+        limits:
+          cpus: '0.15'
+          memory: 300M
+
   datanode_1:
     image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
     restart: unless-stopped
+    depends_on:
+      - leader_0
+      - leader_1
     environment:
       - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_NAME=datanode_1
       - DATANODE_PORT=8000
-    deploy:
-      mode: replicated
-      replicas: ${DATANODE_REPLICA_COUNT}
+      - LEADER_HOST=leader_0
+      - LEADER_PORT=8888
+      - PULL_TIMEOUT=10
+      - PENDING_TIMEOUT=15
+      - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
     volumes:
-      - datanode_vol_1:/var/lib/turtlemq/data/
+      - datanode_1_vol:/var/lib/turtlemq/data/
+    deploy:
+      resources:
+        limits:
+          cpus: '0.15'
+          memory: 300M
+
+  datanode_2:
+    image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      - leader_0
+      - leader_1
+    environment:
+      - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_NAME=datanode_2
+      - DATANODE_PORT=8000
+      - LEADER_HOST=leader_0
+      - LEADER_PORT=8888
+      - PULL_TIMEOUT=10
+      - PENDING_TIMEOUT=15
+      - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
+    volumes:
+      - datanode_2_vol:/var/lib/turtlemq/data/
+    deploy:
+      resources:
+        limits:
+          cpus: '0.15'
+          memory: 300M
+
+  datanode_3:
+    image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      - leader_0
+      - leader_1
+    environment:
+      - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_NAME=datanode_3
+      - DATANODE_PORT=8000
+      - LEADER_HOST=leader_0
+      - LEADER_PORT=8888
+      - PULL_TIMEOUT=10
+      - PENDING_TIMEOUT=15
+      - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
+    volumes:
+      - datanode_3_vol:/var/lib/turtlemq/data/
+    deploy:
+      resources:
+        limits:
+          cpus: '0.15'
+          memory: 300M
 
 volumes:
   prom_data:
     driver: local
-  datanode_vol_0:
+  grafana_data:
     driver: local
-  datanode_vol_1:
+  datanode_0_vol:
     driver: local
+    driver_opts:
+      o: "size=5GB"
+  datanode_1_vol:
+    driver: local
+    driver_opts:
+      o: "size=5GB"
+  datanode_2_vol:
+    driver: local
+    driver_opts:
+      o: "size=5GB"
+  datanode_3_vol:
+    driver: local
+    driver_opts:
+      o: "size=5GB"
