@@ -6,13 +6,18 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy to DO
+    name: Deploy
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: DigitalOcean App Platform deployment
-        uses: digitalocean/app_action@v1.1.6
+      - name: executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          app_name: turtlemq
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /usr/src/app/TurtleMQ
+            docker pull kysre/turtlemq:datanode-latest
+            docker pull kysre/turtlemq:leader-latest
+            docker compose -f test.docker-compose.yaml down
+            git pull
+            docker compose -f test.docker-compose.yaml up -d
