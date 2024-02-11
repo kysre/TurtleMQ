@@ -33,6 +33,11 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=grafana
       - GF_LOG_LEVEL=error
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=smtp.gmail.com:587
+      - GF_SMTP_USER=team17alert@gmail.com
+      - GF_SMTP_PASSWORD=rwtvawmdlscqrteb
+      - GF_SMTP_FROM_ADDRESS=team17alert@gmail.com
     volumes:
       - ./grafana:/etc/grafana/provisioning/datasources
       - grafana_data:/var/lib/grafana
