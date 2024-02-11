@@ -19,6 +19,6 @@ else
     if [ ! $? -eq 0 ]; then
         return 1
     fi
-    docker compose --file generated.docker-compose.yaml up --remove-orphans -d
+    docker compose --file docker-compose.yaml up --remove-orphans -d
     echo "Service scaled to $1."
 fi
