@@ -19,5 +19,6 @@ jobs:
             docker pull kysre/turtlemq:datanode-latest
             docker pull kysre/turtlemq:leader-latest
             docker compose -f docker-compose.yaml down
+            git reset HEAD --hard
             git pull
             docker compose -f docker-compose.yaml up -d
