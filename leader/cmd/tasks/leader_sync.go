@@ -38,7 +38,7 @@ func (ls *LeaderSyncer) RunLeaderSync() {
 		select {
 		case <-ticker.C:
 			if ls.handler.IsReplicaAvailable() {
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 				ls.handler.AddDataNodesToReplica(ctx, ls.directory.DataNodes)
 				cancel()
 			}

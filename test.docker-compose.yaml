@@ -108,6 +108,25 @@ services:
     volumes:
       - datanode_2_vol:/var/lib/turtlemq/data/
 
+  datanode_3:
+    image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      - leader_0
+      - leader_1
+    environment:
+      - HOME_PATH=/var/lib/turtlemq/data/
+      - DATANODE_NAME=datanode_3
+      - DATANODE_PORT=8000
+      - LEADER_HOST=leader_0
+      - LEADER_PORT=8888
+      - PULL_TIMEOUT=10
+      - PENDING_TIMEOUT=15
+      - CLEANER_PERIOD=3
+      - PARTITIONS_COUNT=100
+    volumes:
+      - datanode_3_vol:/var/lib/turtlemq/data/
+
 volumes:
   prom_data:
     driver: local
@@ -118,4 +137,6 @@ volumes:
   datanode_1_vol:
     driver: local
   datanode_2_vol:
+    driver: local
+  datanode_3_vol:
     driver: local
