@@ -14,38 +14,41 @@ from prometheus_client import Counter, Gauge, Summary, Histogram, generate_lates
 import os
 import time
 
-disk_total_size = Gauge('disk_total_size', 'Total size of disk', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
-disk_used_size = Gauge('disk_used_size', 'Used size of disk', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
-message_count = Gauge('message_count', 'Number of messages in datanode', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
-push_latency = Histogram('push_latency', 'Push requests latency', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
-pull_latency = Histogram('pull_latency', 'Pull requests latency', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
-ack_latency = Histogram('ack_latency', 'Ack requests latency', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
-push_throughput = Histogram('push_throughput', 'Push throughput', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
-pull_throughput = Histogram('pull_throughput', 'Pull throughput', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
-ack_throughput = Histogram('ack_throughput', 'Ack throughput', labelnames=["provider"], _labelvalues=[ConfigManager.get_prop('datanode_name')])
+DISK_TOTAL_SIZE = Gauge('disk_total_size', 'Total size of disk', labelnames=["provider"])
+DISK_USED_SIZE = Gauge('disk_used_size', 'Used size of disk', labelnames=["provider"])
+MESSAGE_COUNT = Gauge('message_count', 'Number of messages in datanode', labelnames=["provider"])
+PUSH_LATENCY = Histogram('push_latency', 'Push requests latency', labelnames=["provider"])
+PULL_LATENCY = Histogram('pull_latency', 'Pull requests latency', labelnames=["provider"])
+ACK_LATENCY = Histogram('ack_latency', 'Ack requests latency', labelnames=["provider"])
+PUSH_THROUGHPUT = Histogram('push_throughput', 'Push throughput', labelnames=["provider"])
+PULL_THROUGHPUT = Histogram('pull_throughput', 'Pull throughput', labelnames=["provider"])
+ACK_THROUGHPUT = Histogram('ack_throughput', 'Ack throughput', labelnames=["provider"])
 
 
 def inc_message_count(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        message_count.inc()
+        MESSAGE_COUNT.labels(provider=ConfigManager.get_prop('datanode_name')).inc()
         return result
+
     return wrapper
 
 
 def dec_message_count(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        message_count.dec()
+        MESSAGE_COUNT.labels(provider=ConfigManager.get_prop('datanode_name')).dec()
         return result
+
     return wrapper
 
 
 def set_message_count(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        message_count.set(result.remaining_messages_count)
+        MESSAGE_COUNT.labels(provider=ConfigManager.get_prop('datanode_name')).set(result.remaining_messages_count)
         return result
+
     return wrapper
 
 
@@ -54,21 +57,21 @@ def submit_disk_metrics():
     st = os.statvfs(path)
     total = st.f_blocks * st.f_frsize
     used = (st.f_blocks - st.f_bfree) * st.f_frsize
-    disk_total_size.set(total)
-    disk_total_size.set(used)
+    DISK_TOTAL_SIZE.labels(provider=ConfigManager.get_prop('datanode_name')).set(total)
+    DISK_USED_SIZE.labels(provider=ConfigManager.get_prop('datanode_name')).set(used)
 
 
 class DataNode(datanode_pb2_grpc.DataNodeServicer):
-    def __init__(self, partition_count=1, home_path='datanode/server/'):
+    def __init__(self, partition_count=1, home_path='datanode/server/', metrics_provider='datanode'):
+        self.metrics_provider = metrics_provider
         self.home_path = home_path
         self.partition_count = partition_count
         self.shared_partition = SharedPartitions(partition_count, home_path=home_path + '/main/')
         self.replica = SharedPartitions(partition_count, home_path=home_path + '/replica/')
 
-
     @inc_message_count
     def Push(self, request, context):
-        push_throughput.observe(1)
+        PUSH_THROUGHPUT.labels(provider=self.metrics_provider).observe(1)
         start_time = time.time()
         logger.info(f"received a push message: {request.message}")
         if request.is_replica:
@@ -76,18 +79,18 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
         else:
             self.shared_partition.push(request.message)
         end_time = time.time()
-        push_latency.observe(end_time - start_time)
+        PUSH_LATENCY.labels(provider=self.metrics_provider).observe(end_time - start_time)
         return empty_pb2.Empty()
 
     def Pull(self, request, context):
         try:
-            pull_throughput.observe(1)
+            PULL_THROUGHPUT.labels(provider=self.metrics_provider).observe(1)
             start_time = time.time()
             logger.info(f"received a pull message: {request}")
             message = self.shared_partition.pull()
             response = datanode_pb2.PullResponse(message=message)
             end_time = time.time()
-            pull_latency.observe(end_time - start_time)
+            PULL_LATENCY.labels(provider=self.metrics_provider).observe(end_time - start_time)
             return response
         except grpc.RpcError as e:
             logger.exception(e)
@@ -136,7 +139,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
     @dec_message_count
     def AcknowledgePull(self, request, context):
         try:
-            ack_throughput.observe(1)
+            ACK_THROUGHPUT.labels(provider=self.metrics_provider).observe(1)
             start_time = time.time()
             key = request.key
             logger.info(f"received an acknowledge message: {key}")
@@ -145,7 +148,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
             else:
                 self.shared_partition.acknowledge(key)
             end_time = time.time()
-            ack_latency.observe(end_time - start_time)
+            ACK_LATENCY.labels(provider=self.metrics_provider).observe(end_time - start_time)
             return empty_pb2.Empty()
         except grpc.RpcError as e:
             logger.exception(f"Error in acknowledging. {e}")
@@ -187,7 +190,8 @@ def serve():
     datanode_name = ConfigManager.get_prop('datanode_name')
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=50))
-    datanode_pb2_grpc.add_DataNodeServicer_to_server(DataNode(partitions_count, home_path), server)
+    datanode = DataNode(partitions_count, home_path, datanode_name)
+    datanode_pb2_grpc.add_DataNodeServicer_to_server(datanode, server)
 
     server.add_insecure_port('[::]:' + port)
     server.start()
