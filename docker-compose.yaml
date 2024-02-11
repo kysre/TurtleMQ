@@ -9,6 +9,11 @@ services:
     volumes:
       - ./prometheus:/etc/prometheus
       - prom_data:/prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
 
   grafana:
     image: grafana/grafana
@@ -23,6 +28,11 @@ services:
     volumes:
       - ./grafana:/etc/grafana/provisioning/datasources
       - grafana_data:/var/lib/grafana
+    deploy:
+      resources:
+        limits:
+          cpus: '0.4'
+          memory: 400M
 
   leader_0:
     image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
@@ -36,6 +46,11 @@ services:
       - LEADER_LEADER_REPLICAHOST=leader_1
     ports:
       - '8000:8888'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
 
   leader_1:
     image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
@@ -50,6 +65,11 @@ services:
       - LEADER_LEADER_REPLICAHOST=leader_0
     ports:
       - '8001:8888'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
 
   datanode_0:
     image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
@@ -69,6 +89,11 @@ services:
       - PARTITIONS_COUNT=100
     volumes:
       - datanode_0_vol:/var/lib/turtlemq/data/
+    deploy:
+      resources:
+        limits:
+          cpus: '0.15'
+          memory: 300M
 
   datanode_1:
     image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
@@ -88,6 +113,11 @@ services:
       - PARTITIONS_COUNT=100
     volumes:
       - datanode_1_vol:/var/lib/turtlemq/data/
+    deploy:
+      resources:
+        limits:
+          cpus: '0.15'
+          memory: 300M
 
   datanode_2:
     image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
@@ -107,6 +137,11 @@ services:
       - PARTITIONS_COUNT=100
     volumes:
       - datanode_2_vol:/var/lib/turtlemq/data/
+    deploy:
+      resources:
+        limits:
+          cpus: '0.15'
+          memory: 300M
 
   datanode_3:
     image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
@@ -126,6 +161,11 @@ services:
       - PARTITIONS_COUNT=100
     volumes:
       - datanode_3_vol:/var/lib/turtlemq/data/
+    deploy:
+      resources:
+        limits:
+          cpus: '0.15'
+          memory: 300M
 
 volumes:
   prom_data:
@@ -134,9 +174,17 @@ volumes:
     driver: local
   datanode_0_vol:
     driver: local
+    driver_opts:
+      o: "size=5GB"
   datanode_1_vol:
     driver: local
+    driver_opts:
+      o: "size=5GB"
   datanode_2_vol:
     driver: local
+    driver_opts:
+      o: "size=5GB"
   datanode_3_vol:
     driver: local
+    driver_opts:
+      o: "size=5GB"
