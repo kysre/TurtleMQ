@@ -1,0 +1,23 @@
+name: deploy
+
+on:
+  workflow_dispatch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /usr/src/app/TurtleMQ
+            docker pull kysre/turtlemq:datanode-latest
+            docker pull kysre/turtlemq:leader-latest
+            docker compose -f docker-compose.yaml down
+            git pull
+            docker compose -f docker-compose.yaml up -d

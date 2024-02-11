@@ -1,4 +1,4 @@
-name: dev-ci
+name: build-dev
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - '!main'
 
 jobs:
-  leader:
+  Leader:
     runs-on: ubuntu-latest
     steps:
       -
@@ -35,7 +35,7 @@ jobs:
           push: true
           tags: kysre/turtlemq:leader-${{ steps.extract_branch.outputs.branch }}
   
-  datanode:
+  Datanode:
     runs-on: ubuntu-latest
     steps:
       -
