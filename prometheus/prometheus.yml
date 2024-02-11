@@ -22,3 +22,4 @@ scrape_configs:
     - leader_1:9000
     - datanode_0:9000
     - datanode_1:9000
+    - datanode_2:9000
