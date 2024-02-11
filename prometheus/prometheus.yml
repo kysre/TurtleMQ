@@ -12,11 +12,12 @@ alerting:
 scrape_configs:
 - job_name: prometheus
   honor_timestamps: true
-  scrape_interval: 15s
+  scrape_interval: 5s
   scrape_timeout: 10s
   metrics_path: /metrics
   scheme: http
   static_configs:
+  - targets: ['node_exporter:9100']
   - targets: ['leader_0:9000']
   - targets: ['leader_1:9000']
   - targets: ['datanode_0:9000']

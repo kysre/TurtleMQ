@@ -10,6 +10,9 @@ services:
       - ./prometheus:/etc/prometheus
       - prom_data:/prometheus
 
+  node_exporter:
+    image: prom/node-exporter:latest
+
   grafana:
     image: grafana/grafana
     container_name: grafana
