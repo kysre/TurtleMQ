@@ -44,7 +44,7 @@ def dec_message_count(func):
 def set_message_count(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
-        message_count.set(result)
+        message_count.set(result.remaining_messages_count)
         return result
     return wrapper
 
