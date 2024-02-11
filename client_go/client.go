@@ -12,7 +12,7 @@ import (
 	"github.com/kysre/TurtleMQ/client_go/queue"
 )
 
-const HOST = "localhost"
+const HOST = "64.226.122.208"
 
 type SubscribeFunction func(key string, value []byte)
 

@@ -13,7 +13,7 @@ from client_py import queue_pb2
 class QueueClient:
     stub = None
     replica_stub = None
-    HOST = "localhost"
+    HOST = "64.226.122.208"
     PORT, REPLICA_PORT = "8000", "8001"
     SUBSCRIBE_WORKERS = 3
     SUBSCRIBE_SLEEP_TIMEOUT = 2
