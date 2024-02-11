@@ -25,15 +25,17 @@ throughput = Histogram('disk_total_size', 'Total size of disk', labelnames=["pro
 # DECORATORS{
 def inc_message_count(func):
     def wrapper(*args, **kwargs):
-        func(*args, **kwargs)
+        result = func(*args, **kwargs)
         message_count.labels(provider=ConfigManager.get_prop('datanode_name')).inc()
+        return result
     return wrapper
 
 
 def dec_message_count(func):
     def wrapper(*args, **kwargs):
-        func(*args, **kwargs)
+        result = func(*args, **kwargs)
         message_count.labels(provider=ConfigManager.get_prop('datanode_name')).dec()
+        return result
     return wrapper
 
 
@@ -41,24 +43,21 @@ def set_message_count(func):
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
         message_count.labels(provider=ConfigManager.get_prop('datanode_name')).set(result)
+        return result
     return wrapper
 
 
 def get_disk_info_decorator(func):
     def wrapper():
-        total, used = func()
+        result = func()
+        path = ConfigManager.get_prop('partition_home_path')
+        st = os.statvfs(path)
+        total = st.f_blocks * st.f_frsize
+        used = (st.f_blocks - st.f_bfree) * st.f_frsize
         disk_total_size.labels(provider=ConfigManager.get_prop('datanode_name')).set(total)
-        disk_total_size.labels(provider=ConfigManager.get_prop('datanode_name')).set(total)
+        disk_total_size.labels(provider=ConfigManager.get_prop('datanode_name')).set(used)
+        return result
     return wrapper
-
-
-@get_disk_info_decorator
-def get_disk_info():
-    path = ConfigManager.get_prop('partition_home_path')
-    st = os.statvfs(path)
-    total = st.f_blocks * st.f_frsize
-    used = (st.f_blocks - st.f_bfree) * st.f_frsize
-    return total, used
 
 
 class DataNode(datanode_pb2_grpc.DataNodeServicer):
@@ -156,6 +155,7 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
         except grpc.RpcError as e:
             logger.exception(f"Error in acknowledging. {e}")
 
+    @get_disk_info_decorator
     @set_message_count
     def GetRemainingMessagesCount(self, request, context):
         try:
