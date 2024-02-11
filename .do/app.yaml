@@ -1,0 +1,6 @@
+name: turtlemq
+services:
+  - name: web
+    git:
+      repo_clone_url: https://github.com/kysre/TurtleMQ.git
+      branch: main
