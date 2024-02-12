@@ -65,30 +65,32 @@ class TestQueueClient(TestCase):
 
         self.assertEqual(value, value_1)
 
+
     def test_concurrent_push_without_order(self):
+        for _ in range(50):
 
-        _futures = []
+            _futures = []
 
-        num_threads = 3
+            num_threads = 3
 
-        res = []
+            res = []
 
-        with futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
+            with futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
 
-            for i in range(num_threads):
-                _futures.append(executor.submit(sample_push_pull, self.client))
+                for i in range(num_threads):
+                    _futures.append(executor.submit(sample_push_pull, self.client))
 
-            for pulled_value in futures.as_completed(_futures):
-                try:
-                    res.append(pulled_value.result())
-                except Exception as e:
-                    print(f'Exception: {e}')
+                for pulled_value in futures.as_completed(_futures):
+                    try:
+                        res.append(pulled_value.result())
+                    except Exception as e:
+                        print(f'Exception: {e}')
 
-        real, expected = [r[0] for r in res], [r[1] for r in res]
+            real, expected = [r[0] for r in res], [r[1] for r in res]
 
-        print(f'real: {real}, expected: {expected}')
+            print(f'real: {real}, expected: {expected}')
 
-        self.assertSetEqual(set(real), set(expected))
+            self.assertSetEqual(set(real), set(expected))
 
     def test_read_partition(self):
         client = self.client
