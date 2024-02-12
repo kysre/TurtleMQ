@@ -1,0 +1,25 @@
+name: scale
+
+on:
+  workflow_dispatch:
+    inputs:
+      datanodeCount:
+        description: 'Number of desired datanodes'
+        required: true
+        default: 4
+        type: number
+
+jobs:
+  scale:
+    runs-on: ubuntu-latest
+    name: Scale
+    steps:
+      - name: executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /usr/src/app/TurtleMQ
+            sudo sh scale.sh ${{ inputs.datanodeCount }}

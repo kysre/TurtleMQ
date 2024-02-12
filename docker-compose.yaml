@@ -187,17 +187,9 @@ volumes:
     driver: local
   datanode_0_vol:
     driver: local
-    driver_opts:
-      o: "size=5GB"
   datanode_1_vol:
     driver: local
-    driver_opts:
-      o: "size=5GB"
   datanode_2_vol:
     driver: local
-    driver_opts:
-      o: "size=5GB"
   datanode_3_vol:
     driver: local
-    driver_opts:
-      o: "size=5GB"
