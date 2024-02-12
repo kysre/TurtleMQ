@@ -11,23 +11,27 @@ from configs.utils import hash_function
 
 
 def clear_path(path):
-    for filename in os.listdir(path):
-        file_path = os.path.join(path, filename)
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-        except Exception as e:
-            logger.exception('Failed to delete %s. Reason: %s' % (file_path, e))
+    try:
+        for filename in os.listdir(path):
+            file_path = os.path.join(path, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                logger.exception('Failed to delete %s. Reason: %s' % (file_path, e))
+    except FileNotFoundError:
+        pass  # No need for clearing the path, because the path is not exist.
 
 
 class Message:
     encoding_method = ConfigManager.get_prop('encoding_method')
 
-    def __init__(self, message: datanode_pb2.QueueMessage, file_address):
+    def __init__(self, message: datanode_pb2.QueueMessage, file_address, read_write_lock):
         self.key = message.key
         self.message_status = MessagesStatus.NOT_SENT
+        self.read_write_lock = read_write_lock
         self.file_address = file_address
         self.index = self.write_file_system(message.value)
 
@@ -60,22 +64,24 @@ class Message:
         self.write_file_system(b'')
 
     def write_file_system(self, value):
-        count_lines = 0
-        with open(self.file_address, 'r') as file_system:
-            for line in file_system:
-                count_lines += 1
+        with self.read_write_lock:
+            count_lines = 0
+            with open(self.file_address, 'r') as file_system:
+                for line in file_system:
+                    count_lines += 1
 
-        with open(self.file_address, 'a') as file_system:
-            value = value.decode(Message.encoding_method)
-            file_system.write(json.dumps(dict(key=self.key, value=value, status=self.message_status.value)) + '\n')
+            with open(self.file_address, 'a') as file_system:
+                value = value.decode(Message.encoding_method)
+                file_system.write(json.dumps(dict(key=self.key, value=value, status=self.message_status.value)) + '\n')
 
-        return count_lines
+            return count_lines
 
 
 class Partition:
     def __init__(self, path):
         self.messages = []
         self.dir = path
+        self.messages_lock = threading.Lock()
 
         self.last_pull = {'message': None,
                           'time': None}
@@ -115,7 +121,7 @@ class Partition:
             message.sent_message()
 
     def add_message(self, message: datanode_pb2.QueueMessage):
-        self.messages.append(Message(message, self.dir))
+        self.messages.append(Message(message, self.dir, self.messages_lock))
 
     def get_remaining_message_count(self) -> int:
         return len(self.messages)
