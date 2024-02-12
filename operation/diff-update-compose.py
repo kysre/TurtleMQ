@@ -45,6 +45,12 @@ def scale_up_compose(docker_compose, state, scale_to):
         docker_compose['volumes'][f'datanode_{x}_vol'] = yaml.safe_load(volume_template.format(x=x))
 
 
+def add_datanode_to_prometheus(state, scale_to):
+    with open('./prometheus/prometheus.yml', 'a') as f:
+        for x in range(state, scale_to):
+            f.write(f"\n  - targets: ['datanode_{x}:9000']")
+
+
 def diff_update_compose():
     docker_compose = yaml.safe_load(open('./docker-compose.yaml', 'r').read())
     state = get_current_state(docker_compose)
@@ -54,6 +60,7 @@ def diff_update_compose():
         sys.exit(1)
     scale_up_compose(docker_compose, state, scale_to)
     yaml.dump(docker_compose, open('./docker-compose.yaml', 'w'))
+    add_datanode_to_prometheus(state, scale_to)
 
 
 if __name__ == '__main__':

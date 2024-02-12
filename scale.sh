@@ -20,5 +20,6 @@ else
         return 1
     fi
     docker compose --file docker-compose.yaml up --remove-orphans -d
+    docker compose --file docker-compose.yaml up -d --no-deps --force-recreate prometheus
     echo "Service scaled to $1."
 fi
