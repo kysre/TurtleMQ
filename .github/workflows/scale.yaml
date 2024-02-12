@@ -22,4 +22,4 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /usr/src/app/TurtleMQ
-            sudo sh scale.sh ${{ inputs.datanodeCount }}
+            sudo bash scale.sh ${{ inputs.datanodeCount }}
