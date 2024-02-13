@@ -1,0 +1,48 @@
+{
+  "template_files": {},
+  "template_file_provenances": {},
+  "alertmanager_config": {
+    "route": {
+      "receiver": "turtlemq-contact",
+      "group_by": [
+        "grafana_folder",
+        "alertname"
+      ]
+    },
+    "templates": null,
+    "receivers": [
+      {
+        "name": "grafana-default-email",
+        "grafana_managed_receiver_configs": [
+          {
+            "uid": "e729eec1-03e8-4d08-8d55-633ed1b6cb04",
+            "name": "email receiver",
+            "type": "email",
+            "disableResolveMessage": false,
+            "settings": {
+              "addresses": "<example@email.com>"
+            },
+            "secureFields": {}
+          }
+        ]
+      },
+      {
+        "name": "turtlemq-contact",
+        "grafana_managed_receiver_configs": [
+          {
+            "uid": "e54db3b1-ec77-44a7-9caf-abef76cbdcb1",
+            "name": "turtlemq-contact",
+            "type": "email",
+            "disableResolveMessage": false,
+            "settings": {
+              "addresses": "kasrahajian2002@gmail.com\npooyayou@gmail.com\n",
+              "singleEmail": true,
+              "message": "TurtleMQ alerts are FIRING!"
+            },
+            "secureFields": {}
+          }
+        ]
+      }
+    ]
+  }
+}
