@@ -41,11 +41,11 @@ print("manually fail one node and wait for cluster to become healthy again")
 print("press enter when cluster is healthy")
 input()
 
-for _ in range(SUBSCRIBER_COUNT):
-    subscribe(store)
-
 for i in range(TEST_SIZE // 2, TEST_SIZE):
     push(f"{key_seq[i]}", f"{i}".encode(encoding="utf-8"))
+
+for _ in range(SUBSCRIBER_COUNT):
+    subscribe(store)
 
 # Wait to consume all messages
 print("Wait for all messages to be consumed and press enter")
