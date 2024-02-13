@@ -206,7 +206,7 @@ def serve():
 
     server = grpc.server(
         futures.ThreadPoolExecutor(
-            max_workers=ConfigManager.get_prop('server_thread_pool_size')
+            max_workers=int(ConfigManager.get_prop('server_thread_pool_size'))
         )
     )
     datanode = DataNode(partitions_count, home_path, datanode_name)
