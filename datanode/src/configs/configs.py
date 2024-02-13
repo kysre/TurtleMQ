@@ -20,6 +20,7 @@ class ConfigManager:
         leader_host=env_config('LEADER_HOST'),
         leader_port=env_config('LEADER_PORT'),
         datanode_name=env_config('DATANODE_NAME'),
+        server_thread_pool_size=env_config('SERVER_THREAD_POOL_SIZE'),
     )
 
     @staticmethod
