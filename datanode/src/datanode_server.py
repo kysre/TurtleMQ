@@ -70,7 +70,6 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
         self.shared_partition = SharedPartitions(partition_count, home_path=home_path + '/main/')
         self.replica = SharedPartitions(partition_count, home_path=home_path + '/replica/')
 
-    @inc_message_count
     def Push(self, request, context):
         PUSH_THROUGHPUT.labels(provider=self.metrics_provider).observe(1)
         start_time = time.time()
@@ -137,7 +136,6 @@ class DataNode(datanode_pb2_grpc.DataNodeServicer):
                                         home_path=self.home_path + '/replica/')
         return empty_pb2.Empty()
 
-    @dec_message_count
     def AcknowledgePull(self, request, context):
         try:
             ACK_THROUGHPUT.labels(provider=self.metrics_provider).observe(1)
