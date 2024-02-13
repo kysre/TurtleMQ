@@ -15,8 +15,8 @@ class QueueClient:
     replica_stub = None
     HOST = "64.226.122.208"
     PORT, REPLICA_PORT = "8000", "8001"
-    SUBSCRIBE_WORKERS = 3
-    SUBSCRIBE_SLEEP_TIMEOUT = 2
+    SUBSCRIBE_WORKERS = 1
+    SUBSCRIBE_SLEEP_TIMEOUT = 0.01
 
     @classmethod
     def get_stub(cls, host: str, port: str):
@@ -85,7 +85,8 @@ class QueueClient:
                         pull_response = self.pull()
                         if pull_response is not None and pull_response is not False and pull_response[0] != '':
                             futures.append(executer.submit(f, pull_response[0], pull_response[1]))
-                        time.sleep(QueueClient.SUBSCRIBE_SLEEP_TIMEOUT)
+                        else:
+                            time.sleep(QueueClient.SUBSCRIBE_SLEEP_TIMEOUT)
 
                     _ = [future.result() for future in futures]
 

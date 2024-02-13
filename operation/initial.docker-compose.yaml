@@ -12,7 +12,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.2'
+          cpus: '0.3'
           memory: 300M
 
   node_exporter:
@@ -44,8 +44,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.4'
-          memory: 400M
+          cpus: '0.5'
+          memory: 600M
 
   leader_0:
     image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
@@ -54,16 +54,17 @@ services:
       - prometheus
     environment:
       - LEADER_LOGGING_LEVEL=info
-      - LEADER_LEADER_DATANODEREMAININGCHECKPERIOD=2
+      - LEADER_LEADER_DATANODEREMAININGCHECKPERIOD=1
       - LEADER_LEADER_DATANODEPARTITIONCOUNT=100
+      - LEADER_LEADER_DATANODESYNCTIMEOUT=1000
       - LEADER_LEADER_REPLICAHOST=leader_1
     ports:
       - '8000:8888'
     deploy:
       resources:
         limits:
-          cpus: '0.2'
-          memory: 200M
+          cpus: '0.3'
+          memory: 300M
 
   leader_1:
     image: kysre/turtlemq:leader-${LEADER_IMAGE_TAG}
@@ -73,16 +74,17 @@ services:
       - leader_0
     environment:
       - LEADER_LOGGING_LEVEL=info
-      - LEADER_LEADER_DATANODEREMAININGCHECKPERIOD=2
+      - LEADER_LEADER_DATANODEREMAININGCHECKPERIOD=1
       - LEADER_LEADER_DATANODEPARTITIONCOUNT=100
+      - LEADER_LEADER_DATANODESYNCTIMEOUT=1000
       - LEADER_LEADER_REPLICAHOST=leader_0
     ports:
       - '8001:8888'
     deploy:
       resources:
         limits:
-          cpus: '0.2'
-          memory: 200M
+          cpus: '0.3'
+          memory: 300M
 
   datanode_0:
     image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
@@ -100,13 +102,14 @@ services:
       - PENDING_TIMEOUT=15
       - CLEANER_PERIOD=3
       - PARTITIONS_COUNT=100
+      - SERVER_THREAD_POOL_SIZE=100
     volumes:
       - datanode_0_vol:/var/lib/turtlemq/data/
     deploy:
       resources:
         limits:
-          cpus: '0.15'
-          memory: 300M
+          cpus: '0.3'
+          memory: 400M
 
   datanode_1:
     image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
@@ -124,13 +127,14 @@ services:
       - PENDING_TIMEOUT=15
       - CLEANER_PERIOD=3
       - PARTITIONS_COUNT=100
+      - SERVER_THREAD_POOL_SIZE=100
     volumes:
       - datanode_1_vol:/var/lib/turtlemq/data/
     deploy:
       resources:
         limits:
-          cpus: '0.15'
-          memory: 300M
+          cpus: '0.3'
+          memory: 400M
 
   datanode_2:
     image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
@@ -148,13 +152,14 @@ services:
       - PENDING_TIMEOUT=15
       - CLEANER_PERIOD=3
       - PARTITIONS_COUNT=100
+      - SERVER_THREAD_POOL_SIZE=100
     volumes:
       - datanode_2_vol:/var/lib/turtlemq/data/
     deploy:
       resources:
         limits:
-          cpus: '0.15'
-          memory: 300M
+          cpus: '0.3'
+          memory: 400M
 
   datanode_3:
     image: kysre/turtlemq:datanode-${DATANODE_IMAGE_TAG}
@@ -172,13 +177,14 @@ services:
       - PENDING_TIMEOUT=15
       - CLEANER_PERIOD=3
       - PARTITIONS_COUNT=100
+      - SERVER_THREAD_POOL_SIZE=100
     volumes:
       - datanode_3_vol:/var/lib/turtlemq/data/
     deploy:
       resources:
         limits:
-          cpus: '0.15'
-          memory: 300M
+          cpus: '0.3'
+          memory: 400M
 
 volumes:
   prom_data:
@@ -187,17 +193,9 @@ volumes:
     driver: local
   datanode_0_vol:
     driver: local
-    driver_opts:
-      o: "size=5GB"
   datanode_1_vol:
     driver: local
-    driver_opts:
-      o: "size=5GB"
   datanode_2_vol:
     driver: local
-    driver_opts:
-      o: "size=5GB"
   datanode_3_vol:
     driver: local
-    driver_opts:
-      o: "size=5GB"

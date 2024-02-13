@@ -80,7 +80,7 @@ func (s *DataNodeDataSyncer) SyncData(failedDataNode *models.DataNode) {
 			s.logger.Error(err)
 			continue
 		}
-		go s.pushMessagesToDataNode(ctx, afterDataNode.Client, res.PartitionMessages)
+		s.pushMessagesToDataNode(ctx, afterDataNode.Client, res.PartitionMessages)
 	}
 	// Step 3
 	err = afterDataNode.Client.PurgeReplicaData(ctx)
@@ -113,7 +113,7 @@ func (s *DataNodeDataSyncer) pushMessagesToDataNode(
 	ctx context.Context, client clients.DataNodeClient, messages []*datanode.QueueMessage) {
 	for _, message := range messages {
 		req := datanode.PushRequest{IsReplica: false, Message: message}
-		reqCtx, cancel := context.WithTimeout(ctx, time.Duration(3)*time.Second)
+		reqCtx, cancel := context.WithTimeout(ctx, time.Duration(10)*time.Second)
 		_, err := client.Push(reqCtx, &req)
 		if err != nil {
 			s.logger.Error(err)

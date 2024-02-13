@@ -204,7 +204,11 @@ def serve():
 
     datanode_name = ConfigManager.get_prop('datanode_name')
 
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=50))
+    server = grpc.server(
+        futures.ThreadPoolExecutor(
+            max_workers=ConfigManager.get_prop('server_thread_pool_size')
+        )
+    )
     datanode = DataNode(partitions_count, home_path, datanode_name)
     datanode_pb2_grpc.add_DataNodeServicer_to_server(datanode, server)
 

@@ -84,16 +84,12 @@ func (c *queueClient) acknowledgePull(ctx context.Context, key string) {
 }
 
 func (c *queueClient) runSubscribe(function SubscribeFunction) {
-	tickerPeriod := time.Duration(1) * time.Second
-	ticker := time.NewTicker(tickerPeriod)
 	for {
-		select {
-		case <-ticker.C:
-			key, value := c.Pull()
-			if key == "" {
-				continue
-			}
-			function(key, value)
+		key, value := c.Pull()
+		if key == "" {
+			time.Sleep(time.Duration(10) * time.Millisecond)
+			continue
 		}
+		function(key, value)
 	}
 }

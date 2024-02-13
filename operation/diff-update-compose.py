@@ -28,13 +28,14 @@ def scale_up_compose(docker_compose, state, scale_to):
             - PENDING_TIMEOUT=15
             - CLEANER_PERIOD=3
             - PARTITIONS_COUNT=100
+            - SERVER_THREAD_POOL_SIZE=100
         volumes:
             - datanode_{x}_vol:/var/lib/turtlemq/data/
         deploy:
           resources:
             limits:
-              cpus: '0.15'
-              memory: 300M
+              cpus: '0.3'
+              memory: 400M
     """
     volume_template = '''
         driver: local
